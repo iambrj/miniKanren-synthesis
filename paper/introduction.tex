@@ -1,0 +1,23 @@
+We aim to solve the problem of synthesizing miniKanren programs. As relational
+interpreters also serve as program synthesizers, implementing a relational
+interpreter for miniKanren is one approach to our problem.
+
+The simplest way to implement a self-interpreter for any language is to build a
+shallow interpreter. In a shallow interpreter, each language feature at the
+interpreted level is translated into the appropriate language feature at the
+interpreting level. So, in miniKanren for example, an \Verb|==| at the
+interpreted level would be implemented using an \Verb|==| at the interpreting
+level and so on. Let us concretize this approach by constructing a shallow
+interpreter for a minimal miniKanren language, to explore its limitations.
+
+\subsection{A Shallow Implementation}
+\label{subsec:shallow}
+\input{shallow.tex}
+
+Now, let us explore the alternative solution, a deep interpreter. Here, we will
+have explicit representations of the interpreted language features at the
+interpreting level so that we may express conditions of failure and success.
+
+\subsection{A Deep Implementation}
+\label{subsec:deep}
+\input{deep.tex}
