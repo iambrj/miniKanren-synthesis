@@ -1,0 +1,11 @@
+*.cls
+*.bbx
+*.cbx
+*.dbx
+*.bst
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.pdf
