@@ -125,29 +125,86 @@
       (run* (S) (unifyo '() '() S1 S))
       `(,S1))
 
-(test "unifyo unequal constants 1"
-      (run* (S) (unifyo 3 '() S1 S))
+(test "unifyo equal constants 5"
+      (run* (S) (unifyo '(cat bat) '(cat bat) S1 S))
+      `(,S1))
+
+(test "unifyo same type unequal constants 1"
+      (run* (S) (unifyo '(cat bat) '(cat cat) S1 S))
       `(#f))
 
-(test "unifyo unequal constants 2"
+(test "unifyo same type unequal constants 2"
       (run* (S) (unifyo 1 2 S1 S))
       `(#f))
 
-(test "unifyo unequal constants 3"
+(test "unifyo same type unequal constants 3"
       (run* (S) (unifyo #t #f S1 S))
       `(#f))
 
-(test "unifyo unequal constants 4"
+(test "unifyo same type unequal constants 4"
+      (run* (S) (unifyo 'cat 'bat S1 S))
+      `(#f))
+
+(test "unifyo different type unequal constants 1"
       (run* (S) (unifyo 3 #t S1 S))
       `(#f))
 
-(test "unifyo unequal constants 5"
+(test "unifyo different type unequal constants 2"
+      (run* (S) (unifyo 3 'cat S1 S))
+      `(#f))
+
+(test "unifyo different type unequal constants 3"
       (run* (S) (unifyo 3 '() S1 S))
       `(#f))
-; TODO: Add evalo-gexpr tests
-; TODO: Add evalo-texpr tests
+
+(test "unifyo different type unequal constants 4"
+      (run* (S) (unifyo 3 '(cat bat) S1 S))
+      `(#f))
+
+(test "unifyo different type unequal constants 5"
+      (run* (S) (unifyo #t 'cat S1 S))
+      `(#f))
+
+(test "unifyo different type unequal constants 6"
+      (run* (S) (unifyo #t '() S1 S))
+      `(#f))
+
+(test "unifyo different type unequal constants 7"
+      (run* (S) (unifyo #t '(cat bat) S1 S))
+      `(#f))
+
+(test "unifyo different type unequal constants 8"
+      (run* (S) (unifyo '() '(cat bat) S1 S))
+      `(#f))
+
+(test "unifyo fresh variable success"
+      (run* (S) (unifyo (makevar 4) '(cat bat) S1 S))
+      `(((,(makevar 4) . (cat bat))
+         (,(makevar 3) . ,(makevar 1))
+         (,(makevar 2) . (,(makevar 1) . ,(makevar 0)))
+         (,(makevar 1) . 3)
+         (,(makevar 0) . apple))))
+
+(test "unifyo bound variable success"
+      (run* (S) (unifyo (makevar 3) 3 S1 S))
+      `(,S1))
+
+(test "unifyo bound variable failure"
+      (run* (S) (unifyo (makevar 3) 'cat S1 S))
+      `(#f))
+
+(test "unifyo bound variable pair success"
+      (run* (S) (unifyo (makevar 2) '(3 . apple) S1 S))
+      `(,S1))
+
+(test "unifyo bound variable pair failure"
+      (run* (S) (unifyo (makevar 2) 5 S1 S))
+      `(#f))
+
 ; TODO: Add mpluso tests
-; TODO: Add bindo tests
 ; TODO: Add lookupo tests
 ; TODO: Add lookupo-reco tests
+; TODO: Add bindo tests
+; TODO: Add evalo-texpr tests
 ; TODO: Add evalo-args tests
+; TODO: Add evalo-gexpr tests
