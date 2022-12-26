@@ -239,11 +239,42 @@
       (run* (S) (unifyo `(,(makevar 2) . 5) '((3 . banana) . 5) S1 S))
       `(#f))
 
+; mpluso tests
+(test "mpluso first argument empty stream"
+      (run* ($) (mpluso '() `(,S1) $))
+      `((,S1)))
+
+(test "mpluso second argument empty stream"
+      (run* ($) (mpluso `(,S1) '() $))
+      `((,S1)))
+
+(define env-S1 `((a . ,(makevar 0))
+                 (b . ,(makevar 1))
+                 (c . ,(makevar 2))
+                 (d . ,(makevar 3))
+                 (e . ,(makevar 4))))
+
+(define st1 `(,S1 . (((((())))))))
+
+(test "mpluso first argument mature stream"
+      (run* ($) (mpluso `(,st1) `(delayed eval (== 'apple a) ,st1 ,env-S1) $))
+      `((,st1 . (delayed eval (== 'apple a) ,st1 ,env-S1))))
+
+(test "mpluso first argument (mature delayed) stream"
+      (run* ($) (mpluso `(,st1 . (delayed eval (== b d) ,st1 ,env-S1))
+                        `(delayed eval (== 'apple a) ,st1 ,env-S1)
+                        $))
+      `((,st1 . (delayed mplus (delayed eval (== b d) ,st1 ,env-S1)
+                        (delayed eval (== 'apple a) ,st1 ,env-S1)))))
+
+(test "mpluso first argument delayed stream"
+      (run* ($) (mpluso `(delayed eval (== 'apple a) ,st1 ,env-S1) `(,st1) $))
+      `((delayed mplus (delayed eval (== 'apple a) ,st1 ,env-S1) (,st1))))
+
+; TODO: Add bindo tests
 ; TODO: Add lookupo tests
 ; TODO: Add lookupo-reco tests
 ; TODO: Add occurso tests
-; TODO: Add mpluso tests
-; TODO: Add bindo tests
 ; TODO: Add evalo-texpr tests
 ; TODO: Add evalo-args tests
 ; TODO: Add evalo-gexpr tests
