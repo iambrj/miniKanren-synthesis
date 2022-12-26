@@ -107,8 +107,38 @@
       (run* (v) (walko (makevar 2) S1 v))
       `((,(makevar 1) . ,(makevar 0))))
 
-; TODO: Add walk*o tests
-; TODO: Add unifyo tests
+; walk*o tests
+(define S2 `((,(makevar 4) . ())
+             (,(makevar 3) . ,(makevar 1))
+             (,(makevar 2) . (,(makevar 1) . ,(makevar 5)))
+             (,(makevar 1) . 3)
+             (,(makevar 0) . apple)))
+
+; Nonrecursive cases
+(test "walk*o nonrecursive empty list"
+      (run* (v) (walk*o (makevar 4) S2 v))
+      `(()))
+
+(test "walk*o nonrecursive number"
+      (run* (v) (walk*o (makevar 1) S2 v))
+      `(3))
+
+(test "walk*o nonrecursive symbol"
+      (run* (v) (walk*o (makevar 0) S2 v))
+      `(apple))
+
+(test "walk*o nonrecursive boolean"
+      (run* (v) (walk*o #t S2 v))
+      `(#t))
+
+(test "walk*o nonrecursive fresh variable"
+      (run* (v) (walk*o (makevar 5) S2 v))
+      `(,(makevar 5)))
+
+(test "walk*o recursive pair"
+      (run* (v) (walk*o (makevar 2) S2 v))
+      `((3 . ,(makevar 5))))
+
 (test "unifyo equal constants 1"
       (run* (S) (unifyo 5 5 S1 S))
       `(,S1))
@@ -201,10 +231,22 @@
       (run* (S) (unifyo (makevar 2) 5 S1 S))
       `(#f))
 
-; TODO: Add mpluso tests
+(test "unifyo pair success"
+      (run* (S) (unifyo `(,(makevar 2) . 5) '((3 . apple) . 5) S1 S))
+      `(,S1))
+
+(test "unifyo pair failure"
+      (run* (S) (unifyo `(,(makevar 2) . 5) '((3 . banana) . 5) S1 S))
+      `(#f))
+
 ; TODO: Add lookupo tests
 ; TODO: Add lookupo-reco tests
+; TODO: Add occurso tests
+; TODO: Add mpluso tests
 ; TODO: Add bindo tests
 ; TODO: Add evalo-texpr tests
 ; TODO: Add evalo-args tests
 ; TODO: Add evalo-gexpr tests
+; TODO: Add reifyo tests
+; TODO: Add reify-state/1st-varo tests
+; TODO: Add build-reify-S tests
