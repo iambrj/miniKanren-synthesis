@@ -497,10 +497,10 @@ Syntax
        (=/= 'delayed a))]
     [(fresh (th $-th)
        (== `(delayed . ,th) $)
-       (eval-thunko $ $-th)
+       (evalo-thunk $ $-th)
        (pullo $-th $1))]))
 
-(define (eval-thunko th $)
+(define (evalo-thunk th $)
   (fresh ()
     (conde
     [(fresh (gexpr s/c env)
@@ -508,11 +508,11 @@ Syntax
        (evalo-gexpr gexpr s/c env $))]
     [(fresh ($1 $2 $1e)
        (== `(delayed mplus ,$1 ,$2) th)
-       (eval-thunko $1 $1e)
+       (evalo-thunk $1 $1e)
        (mpluso $2 $1e $))]
     [(fresh ($1 gexpr env $1e)
        (== `(delayed bind ,$1 ,gexpr ,env) th)
-       (eval-thunko $1 $1e)
+       (evalo-thunk $1 $1e)
        (bindo $1e gexpr env $))])))
 
 (define (reifyo s/c* out)
