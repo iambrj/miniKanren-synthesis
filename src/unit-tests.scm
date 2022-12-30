@@ -343,7 +343,65 @@
       (run* (v) (lookup-reco 'c eveno-oddo-c* renv-S1 env-S1 v))
       `(,(makevar 2)))
 
-; TODO: Add evalo-texpr tests
+; eval-texpro tests
+(test "eval-texpro number"
+      (run* (v) (eval-texpro 5 env-S1 v))
+      `(5))
+
+(test "eval-texpro boolean"
+      (run* (v) (eval-texpro '#f env-S1 v))
+      `(#f))
+
+(test "eval-texpro empty list"
+      (run* (v) (eval-texpro '() env-S1 v))
+      `(()))
+
+(test "eval-texpro quote number"
+      (run* (v) (eval-texpro '(quote 3) env-S1 v))
+      `(3))
+
+(test "eval-texpro quote symbol"
+      (run* (v) (eval-texpro '(quote cat) env-S1 v))
+      `(cat))
+
+(test "eval-texpro quote empty list"
+      (run* (v) (eval-texpro '(quote ()) env-S1 v))
+      `(()))
+
+(test "eval-texpro quote boolean"
+      (run* (v) (eval-texpro '(quote #t) env-S1 v))
+      `(#t))
+
+(test "eval-texpro quote bounded to constant in env"
+      (run* (v) (eval-texpro '(cons quote 5) `((quote . 5) . ,env-S1) v))
+      `((5 . 5)))
+
+(test "eval-texpro closr lookup"
+      (run* (v) (eval-texpro 'oddo renv-S1 v))
+      `((closr (x) ,renv-S1 . (fresh (a d)
+                                (== `(,a . ,d) x)
+                                (eveno d)))))
+
+(test "eval-texpro variable lookup"
+      (run* (v) (eval-texpro 'c renv-S1 v))
+      `(,(makevar 2)))
+
+(test "eval-texpro cons pair"
+      (run* (v) (eval-texpro '(cons 3 4) renv-S1 v))
+      `((3 . 4)))
+
+(test "eval-texpro cons pair"
+      (run* (v) (eval-texpro '(cons 3 4) renv-S1 v))
+      `((3 . 4)))
+
+(test "eval-texpro cons bound to constant"
+      (run* (v) (eval-texpro 'cons `((cons . 5) . ,renv-S1) v))
+      `(5))
+
+(test "eval-texpro cons inside cons"
+      (run* (v) (eval-texpro '(cons 1 (cons 2 '())) renv-S1 v))
+      `((1 2)))
+
 ; TODO: Add evalo-args tests
 ; TODO: Add evalo-gexpr tests
 ; TODO: Add evalo-fresh tests
