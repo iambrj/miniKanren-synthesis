@@ -328,6 +328,7 @@ Syntax:
 (define (eval-conjno ge+ st env $)
   (fresh (ge-a ge-d ge-a-$)
     (== `(,ge-a . ,ge-d) ge+)
+    ; XXX : sensitive conjunction order
     ; Loops on forward run if order changed
     (eval-gexpro ge-a st env ge-a-$)
     (conde

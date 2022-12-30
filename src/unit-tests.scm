@@ -407,8 +407,17 @@
       (run* (v) (eval-argso '(a 5 (cons b '())) renv-S1 v))
       `((,(makevar 0) 5 (,(makevar 1)))))
 
-; TODO: Add evalo-gexpr tests
-; TODO: Add evalo-fresh tests
+; eval-fresho tests
+(define S2 `((,(makevar 1) . 3)
+             (,(makevar 0) . apple)))
+(define st2 `(,S2 . ((()))))
+(define renv-S2 `((a . ,(makevar 0))
+                  (b . ,(makevar 1))))
+(test "eval-fresho"
+      (run* ($) (eval-fresho '(c d e) '((== c (cons d e))) st2 renv-S2 $))
+      `(((((,(makevar 2) . (,(makevar 3) . ,(makevar 4))) . ,S2) . (((((())))))))))
+
+; TODO: Add eval-gexpro tests
 ; TODO: Add reifyo tests
 ; TODO: Add reify-state/1st-varo tests
 ; TODO: Add build-reify-S tests
