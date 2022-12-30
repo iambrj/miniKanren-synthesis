@@ -448,8 +448,22 @@
       (run* (S) (build-reify-S (makevar 2) S3 S))
       `(((,(makevar 6) . (_. . ,(peano 6))) . ,S3)))
 
-; TODO: Add reify-state/1st-varo tests
-; TODO: Add reifyo tests
+; reify-state/1st-varo tests
+(define S4 `((,(makevar 3) . ,(makevar 1))
+             (,(makevar 0) . (,(makevar 6) . ,(makevar 2)))
+             (,(makevar 4) . ())
+             (,(makevar 5) . #f)
+             (,(makevar 1) . 3)
+             (,(makevar 2) . apple)))
+(test "reify-state/1st-varo"
+      (run* (v) (reify-state/1st-varo `(,S4 . (((((((())))))))) v))
+      `(((_. . ,(peano 0)) . apple)))
+
+; reifyo tests
+(test "reifyo"
+      (run* (ans*) (reifyo `((,S4 . (((((((())))))))) (,S3 . (((((((()))))))))) ans*))
+      `((((_. . ,(peano 0)) . apple) apple)))
+
 ; TODO: Add eval-gexpro tests
 ; TODO: Add exto tests
 ; TODO: Add ext-reco tests
