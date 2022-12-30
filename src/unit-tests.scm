@@ -417,10 +417,40 @@
       (run* ($) (eval-fresho '(c d e) '((== c (cons d e))) st2 renv-S2 $))
       `(((((,(makevar 2) . (,(makevar 3) . ,(makevar 4))) . ,S2) . (((((())))))))))
 
-; TODO: Add eval-gexpro tests
-; TODO: Add reifyo tests
+(define S3 `((,(makevar 3) . ,(makevar 1))
+             (,(makevar 2) . (,(makevar 1) . ,(makevar 0)))
+             (,(makevar 4) . ())
+             (,(makevar 5) . #f)
+             (,(makevar 1) . 3)
+             (,(makevar 0) . apple)))
+; build-reify-S tests
+(test "build-reify-S constant number"
+      (run* (S) (build-reify-S (makevar 3) S3 S))
+      `(,S3))
+
+(test "build-reify-S constant symbol"
+      (run* (S) (build-reify-S (makevar 0) S3 S))
+      `(,S3))
+
+(test "build-reify-S constant boolean"
+      (run* (S) (build-reify-S (makevar 5) S3 S))
+      `(,S3))
+
+(test "build-reify-S constant empty list"
+      (run* (S) (build-reify-S (makevar 4) S3 S))
+      `(,S3))
+
+(test "build-reify-S fresh variable"
+      (run* (S) (build-reify-S (makevar 6) S3 S))
+      `(((,(makevar 6) . (_. . ,(peano 6))) . ,S3)))
+
+(test "build-reify-S pair"
+      (run* (S) (build-reify-S (makevar 6) S3 S))
+      `(((,(makevar 6) . (_. . ,(peano 6))) . ,S3)))
+
 ; TODO: Add reify-state/1st-varo tests
-; TODO: Add build-reify-S tests
+; TODO: Add reifyo tests
+; TODO: Add eval-gexpro tests
 ; TODO: Add exto tests
 ; TODO: Add ext-reco tests
 ; TODO: Add occurso tests
