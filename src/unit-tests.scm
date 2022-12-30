@@ -256,6 +256,10 @@
 
 (define st1 `(,S1 . (((((())))))))
 
+(test "mpluso first argument empty stream"
+      (run* ($) (mpluso `() `(delayed eval (== 'apple a) ,st1 ,env-S1) $))
+      `((delayed eval (== 'apple a) ,st1 ,env-S1)))
+
 (test "mpluso first argument mature stream"
       (run* ($) (mpluso `(,st1) `(delayed eval (== 'apple a) ,st1 ,env-S1) $))
       `((,st1 . (delayed eval (== 'apple a) ,st1 ,env-S1))))
@@ -271,13 +275,34 @@
       (run* ($) (mpluso `(delayed eval (== 'apple a) ,st1 ,env-S1) `(,st1) $))
       `((delayed mplus (delayed eval (== 'apple a) ,st1 ,env-S1) (,st1))))
 
-; TODO: Add bindo tests
-; TODO: Add lookupo tests
-; TODO: Add lookupo-reco tests
+; bindo tests
+(test "bindo first argument empty stream"
+      (run* ($) (bindo '() '(== 'apple a) env-S1 $))
+      '(()))
+
+(test "bindo first argument mature stream"
+      (run* ($) (bindo `(,st1) '(== 'cat e) env-S1 $))
+      `(((((,(makevar 4) . cat) . ,S1) . (((((())))))))))
+
+(test "bindo first argument (mature delayed) stream"
+      (run* ($) (bindo `(,st1 . (delayed eval (== b d) ,st1 ,env-S1)) '(== 'cat e) env-S1 $))
+      `(((((,(makevar 4) . cat) . ,S1) . (((((())))))) .
+         (delayed bind (delayed eval (== b d) ,st1 ,env-S1) (== 'cat e) ,env-S1))))
+
+(test "bindo first argument delayed stream"
+      (run* ($) (bindo `(delayed eval (== b d) ,st1 ,env-S1) '(== 'cat e) env-S1 $))
+      `((delayed bind (delayed eval (== b d) ,st1 ,env-S1) (== 'cat e) ,env-S1)))
+
 ; TODO: Add occurso tests
+; TODO: Add ext-so tests
 ; TODO: Add evalo-texpr tests
 ; TODO: Add evalo-args tests
 ; TODO: Add evalo-gexpr tests
+; TODO: Add evalo-fresh tests
 ; TODO: Add reifyo tests
 ; TODO: Add reify-state/1st-varo tests
 ; TODO: Add build-reify-S tests
+; TODO: Add exto tests
+; TODO: Add ext-reco tests
+; TODO: Add lookupo tests
+; TODO: Add lookupo-reco tests
