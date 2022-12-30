@@ -13,17 +13,17 @@
 (define conjn-2 '((== 5 d) (== (cons a d) q)))
 (define conjn-3 '((== 3 a) (== 5 d) (== (cons a d) q)))
 
-(test "evalo-conjn 1"
-      (run 1 ($) (evalo-conjn conjn-1 initS/3 env $))
+(test "eval-conjno 1"
+      (run 1 ($) (eval-conjno conjn-1 initS/3 env $))
       `(((((,(makevar 2) . 5)) . (((())))))))
 
-(test "evalo-conjn 2"
-      (run 1 ($) (evalo-conjn conjn-2 initS/3 env $))
+(test "eval-conjno 2"
+      (run 1 ($) (eval-conjno conjn-2 initS/3 env $))
       `(((((,(makevar 0) . (,(makevar 1) . ,(makevar 2))) (,(makevar 2) . 5))
           . (((())))))))
 
-(test "evalo-conjn 3"
-      (run 1 ($) (evalo-conjn conjn-3 initS/3 env $))
+(test "eval-conjno 3"
+      (run 1 ($) (eval-conjno conjn-3 initS/3 env $))
       `(((((,(makevar 0) . (,(makevar 1) . ,(makevar 2)))
            (,(makevar 2) . 5)
            (,(makevar 1) . 3))
@@ -38,17 +38,17 @@
                   ((== 'apple d) (== 4 a) (== (cons a d) q))
                   ,conjn-3))
 
-(test "evalo-conde 1"
-      (run 1 ($) (evalo-conde disjn-1 initS/3 env $))
+(test "eval-condeo 1"
+      (run 1 ($) (eval-condeo disjn-1 initS/3 env $))
       `(((((,(makevar 2) . 5)) . (((())))))))
 
-(test "evalo-conde 2"
-      (run 1 ($) (evalo-conde disjn-2 initS/3 env $))
+(test "eval-condeo 2"
+      (run 1 ($) (eval-condeo disjn-2 initS/3 env $))
       `(((((,(makevar 2) . 5)) . (((()))))
          (((,(makevar 2) . 4)) . (((())))))))
 
-(test "evalo-conde 3"
-      (run 1 ($) (evalo-conde disjn-3 initS/3 env $))
+(test "eval-condeo 3"
+      (run 1 ($) (eval-condeo disjn-3 initS/3 env $))
       `(((((,(makevar 2) . 5)) . (((()))))
          (((,(makevar 2) . 4)) . (((()))))
          (((,(makevar 0) . (,(makevar 1) . ,(makevar 2)))
@@ -56,8 +56,8 @@
            (,(makevar 1) . 3))
           . (((())))))))
 
-(test "evalo-conde 4"
-      (run 1 ($) (evalo-conde disjn-4 initS/3 env $))
+(test "eval-condeo 4"
+      (run 1 ($) (eval-condeo disjn-4 initS/3 env $))
       `(((((,(makevar 0) . (,(makevar 1) . ,(makevar 2)))
            (,(makevar 1) . cat)
            (,(makevar 2) . 5)) . (((()))))
@@ -402,7 +402,11 @@
       (run* (v) (eval-texpro '(cons 1 (cons 2 '())) renv-S1 v))
       `((1 2)))
 
-; TODO: Add evalo-args tests
+; eval-argso tests
+(test "eval-argso"
+      (run* (v) (eval-argso '(a 5 (cons b '())) renv-S1 v))
+      `((,(makevar 0) 5 (,(makevar 1)))))
+
 ; TODO: Add evalo-gexpr tests
 ; TODO: Add evalo-fresh tests
 ; TODO: Add reifyo tests

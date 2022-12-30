@@ -1,29 +1,39 @@
 #|
-Syntax
+Syntax:
+<mk-program> ::= (run* (<id>+) <goal expr>+)
+               | (run <peano> (<id>+) <goal expr>+)
 
-<mk-program> ::= (run* <logic variable> <goal expr>)
-               | (run <peano> <logic variable> <goal expr>)
-
-<goal expr> ::= (conde <goal expr>+)
-              | (fresh (<logic-var>*) <goal expr>+)
+<goal expr> ::= (conde (<goal expr>+)+)
+              | (fresh (<id>*) <goal expr>+)
               | (== <term expr> <term expr>)
-              | (letrec-rel ((<lexical var> (<lexical var>*) <goal expr>))
-                            <goal expr>)
-              | (apply-rel <lexical var> <term expr>*)
-              | (delay <goal expr>)
+              | (letrec-rel ((<id> (<id>*) <goal expr>+))
+                  <goal expr>+)
+              ; Try getting rid of "apply-rel". Split env into two lists
+              ; (variables and values), use (absento conde variables) in other
+              ; cases
+              | (apply-rel <id> <term expr>*)
 
-<term expr> ::= (quote <datum>) |
-                <lexical variable> |
-                <logic variable> |
-                (cons <term expr> <term expr>)
+<term expr> ::= (quote <datum>)
+              | <lexical variable>
+              | <number>
+              | <boolean>
+              | (cons <term expr> <term expr>)
 
-<datum> ::= <number> |
-            <boolean> |
-            <symbol> (not the var tag) |
-            ()
+<term> ::= <symbol>
+         | <number>
+         | <boolean>
+         | ()
+         | (<term> . <term>)
+         | <logic variable>
 
-<peano> ::= () |
-            (<peano>)
+<datum> ::= <number>
+          | <boolean>
+          | <symbol> (not the var tag)
+          | ()
+          | (<datum> . <datum>)
+
+<peano> ::= ()
+          | (<peano>)
 
 <lexical variable> ::= <symbol>
 
@@ -31,8 +41,8 @@ Syntax
 
 <number> ::= [0-9]+
 
-<boolean> ::= #f |
-              #t
+<boolean> ::= #f
+            | #t
 |#
 
 (load "../../faster-minikanren/mk-vicare.scm")
@@ -242,7 +252,7 @@ Syntax
             (unifyo u-a v-a s s-a)
             (unifyo u-d v-d s-a s1)]))])))
 
-(define (evalo-gexpr expr s/c env $)
+(define (eval-gexpro expr s/c env $)
   (conde
     [(fresh (ge)
        (== `(delay ,ge) expr)
@@ -251,8 +261,8 @@ Syntax
     [(fresh (te1 te2 v1 v2 s c s1)
        (== `(== ,te1 ,te2) expr)
        (== `(,s . ,c) s/c)
-       (evalo-texpr te1 env v1)
-       (evalo-texpr te2 env v2)
+       (eval-texpro te1 env v1)
+       (eval-texpro te2 env v2)
        (conde
          [(== '() $) (== #f s1)]
          [(== `((,s1 . ,c)) $) (=/= #f s1)])
@@ -260,23 +270,23 @@ Syntax
     [(fresh (x* ge+)
        (== `(fresh ,x* . ,ge+) expr)
        (=/= '() ge+)
-       (evalo-fresh x* ge+ s/c env $))]
+       (eval-fresho x* ge+ s/c env $))]
     [(fresh (ge+)
        (== `(conde . ,ge+) expr)
        (=/= '() ge+)
-       (evalo-conde ge+ s/c env $))]
+       (eval-condeo ge+ s/c env $))]
     [(fresh (b* c* ge+ renv)
        (== `(letrec-rel ,b* . ,ge+) expr)
        (ext-reco b* '() env renv)
-       (evalo-conjn ge+ s/c renv $))]
+       (eval-conjno ge+ s/c renv $))]
     [(fresh (id args params ge+ env1 ext-env vargs)
        (== `(apply-rel ,id . ,args) expr)
        (lookupo id env `(closr ,params ,env1 . ,ge+))
-       (evalo-args args env vargs)
+       (eval-argso args env vargs)
        (exto params vargs env1 ext-env)
-       (evalo-conjn ge+ s/c ext-env $))]))
+       (eval-conjno ge+ s/c ext-env $))]))
 
-(define (evalo-texpr expr env val)
+(define (eval-texpro expr env val)
   (conde
     [(== expr val)
      (conde
@@ -300,26 +310,26 @@ Syntax
        (== `(cons ,e1 ,e2) expr)
        (== `(,v1 . ,v2) val)
        (not-in-envo 'cons env)
-       (evalo-texpr e1 env v1)
-       (evalo-texpr e2 env v2))]))
+       (eval-texpro e1 env v1)
+       (eval-texpro e2 env v2))]))
 
 ; [[GoalExpr]] -> State -> Env -> Stream State
-(define (evalo-conde conjn-ge* st env $)
+(define (eval-condeo conjn-ge* st env $)
   (conde
     [(== '() conjn-ge*) (== '() $)]
     [(fresh (conjn-ge-a conjn-ge-d $-a $-d)
        (== `(,conjn-ge-a . ,conjn-ge-d) conjn-ge*)
-       (evalo-conjn conjn-ge-a st env $-a)
-       (evalo-conde conjn-ge-d st env $-d)
+       (eval-conjno conjn-ge-a st env $-a)
+       (eval-condeo conjn-ge-d st env $-d)
        (mpluso $-a $-d $))]))
 
 ; [GoalExpr] -> State -> Env -> Stream State
 ; Fails silently if ge+ is empty
-(define (evalo-conjn ge+ st env $)
+(define (eval-conjno ge+ st env $)
   (fresh (ge-a ge-d ge-a-$)
     (== `(,ge-a . ,ge-d) ge+)
     ; Loops on forward run if order changed
-    (evalo-gexpr ge-a st env ge-a-$)
+    (eval-gexpro ge-a st env ge-a-$)
     (conde
       [(== '() ge-d)
        (== ge-a-$ $)]
@@ -329,15 +339,15 @@ Syntax
          (bindo ge-a-$ ge-d-gexpr env $))])))
 
 ; [Var] -> [GoalExpr] -> State -> Env -> Stream State
-(define (evalo-fresh x* ge+ st env $)
+(define (eval-fresho x* ge+ st env $)
   (conde
     [(== '() x*)
-     (evalo-conjn ge+ st env $)]
+     (eval-conjno ge+ st env $)]
     [(fresh (x-a x-d s c env1)
        (== `(,x-a . ,x-d) x*)
        (== `(,s . ,c) st)
        (exto `(,x-a) `((var . ,c)) env env1)
-       (evalo-fresh x-d ge+ `(,s . (,c)) env1 $))]))
+       (eval-fresho x-d ge+ `(,s . (,c)) env1 $))]))
 
 ; Stream ($) := () ; empty stream
 ;             | (state . $) ; mature stream
@@ -366,7 +376,7 @@ Syntax
     [(fresh ($1-a $1-d v-a v-d)
        (== `(,$1-a . ,$1-d) $)
        (=/= 'delayed $1-a)
-       (evalo-gexpr ge $1-a env v-a)
+       (eval-gexpro ge $1-a env v-a)
        (bindo $1-d ge env v-d)
        (mpluso v-a v-d $1))]
     [(fresh (d)
@@ -439,28 +449,28 @@ Syntax
        (=/= '() ge+)
        (not-in-env-reco x c*-d env))]))
 
-(define (evalo-args args env vals)
+(define (eval-argso args env vals)
   (conde
     [(== args '())
      (== vals '())]
     [(fresh (a d va vd)
        (== `(,a . ,d) args)
        (== `(,va . ,vd) vals)
-       (evalo-texpr a env va)
-       (evalo-args d env vd))]))
+       (eval-texpro a env va)
+       (eval-argso d env vd))]))
 
-(define (evalo-program expr out)
+(define (eval-programo expr out)
   (conde
     [(fresh (lvar gexpr $ s/c*)
        (symbolo lvar)
        (== `(run* (,lvar) ,gexpr) expr)
-       (evalo-gexpr `(fresh (,lvar) ,gexpr) `(,empty-s . ,peano-zero) init-env $)
+       (eval-gexpro `(fresh (,lvar) ,gexpr) `(,empty-s . ,peano-zero) init-env $)
        (take-allo $ s/c*)
        (reifyo s/c* out))]
     [(fresh (n lvar gexpr $ s/c*)
        (symbolo lvar)
        (== `(run ,n (,lvar) ,gexpr) expr)
-       (evalo-gexpr `(fresh (,lvar) ,gexpr) `(,empty-s . ,peano-zero) init-env $)
+       (eval-gexpro `(fresh (,lvar) ,gexpr) `(,empty-s . ,peano-zero) init-env $)
        (take-no n $ s/c*)
        (reifyo s/c* out))]))
 
@@ -497,22 +507,22 @@ Syntax
        (=/= 'delayed a))]
     [(fresh (th $-th)
        (== `(delayed . ,th) $)
-       (evalo-thunk $ $-th)
+       (eval-thunko $ $-th)
        (pullo $-th $1))]))
 
-(define (evalo-thunk th $)
+(define (eval-thunko th $)
   (fresh ()
     (conde
     [(fresh (gexpr s/c env)
        (== `(delayed eval ,gexpr ,s/c ,env) th)
-       (evalo-gexpr gexpr s/c env $))]
+       (eval-gexpro gexpr s/c env $))]
     [(fresh ($1 $2 $1e)
        (== `(delayed mplus ,$1 ,$2) th)
-       (evalo-thunk $1 $1e)
+       (eval-thunko $1 $1e)
        (mpluso $2 $1e $))]
     [(fresh ($1 gexpr env $1e)
        (== `(delayed bind ,$1 ,gexpr ,env) th)
-       (evalo-thunk $1 $1e)
+       (eval-thunko $1 $1e)
        (bindo $1e gexpr env $))])))
 
 (define (reifyo s/c* out)
