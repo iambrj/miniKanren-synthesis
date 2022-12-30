@@ -293,8 +293,56 @@
       (run* ($) (bindo `(delayed eval (== b d) ,st1 ,env-S1) '(== 'cat e) env-S1 $))
       `((delayed bind (delayed eval (== b d) ,st1 ,env-S1) (== 'cat e) ,env-S1)))
 
-; TODO: Add occurso tests
-; TODO: Add ext-so tests
+; lookupo tests
+(test "lookupo nonrecursive env base case"
+      (run* (v) (lookupo 'a env-S1 v))
+      `(,(makevar 0)))
+
+(test "lookupo nonrecursive env recursive case"
+      (run* (v) (lookupo 'c env-S1 v))
+      `(,(makevar 2)))
+
+(define renv-S1 `((a . ,(makevar 0))
+                  (b . ,(makevar 1))
+                  (c . ,(makevar 2))
+                  (d . ,(makevar 3))
+                  (e . ,(makevar 4))))
+(define eveno-oddo-c*
+  `((closr eveno (x) . (conde [(== '() x)]
+                              [(fresh (a d)
+                                 (== `(,a . ,d) x)
+                                 (oddo d))]))
+    (closr oddo (x) . (fresh (a d)
+                        (== `(,a . ,d) x)
+                        (eveno d)))))
+
+(define renv-S1 `((rec ,eveno-oddo-c*) . ,env-S1))
+
+(test "lookupo recursive env closure lookup"
+      (run* (v) (lookupo 'eveno renv-S1 v))
+      `((closr (x) ,renv-S1 . (conde [(== '() x)]
+                                     [(fresh (a d)
+                                        (== `(,a . ,d) x)
+                                        (oddo d))]))))
+
+; lookup-reco tests
+(test "lookup-reco recursive env closure lookup 1"
+      (run* (v) (lookup-reco 'eveno eveno-oddo-c* renv-S1 env-S1 v))
+      `((closr (x) ,renv-S1 . (conde [(== '() x)]
+                                     [(fresh (a d)
+                                        (== `(,a . ,d) x)
+                                        (oddo d))]))))
+
+(test "lookup-reco recursive env closure lookup 2"
+      (run* (v) (lookup-reco 'oddo eveno-oddo-c* renv-S1 env-S1 v))
+      `((closr (x) ,renv-S1 . (fresh (a d)
+                                (== `(,a . ,d) x)
+                                (eveno d)))))
+
+(test "lookup-reco recursive env variable lookup"
+      (run* (v) (lookup-reco 'c eveno-oddo-c* renv-S1 env-S1 v))
+      `(,(makevar 2)))
+
 ; TODO: Add evalo-texpr tests
 ; TODO: Add evalo-args tests
 ; TODO: Add evalo-gexpr tests
@@ -304,5 +352,5 @@
 ; TODO: Add build-reify-S tests
 ; TODO: Add exto tests
 ; TODO: Add ext-reco tests
-; TODO: Add lookupo tests
-; TODO: Add lookupo-reco tests
+; TODO: Add occurso tests
+; TODO: Add ext-so tests
