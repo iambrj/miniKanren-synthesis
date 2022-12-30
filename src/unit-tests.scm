@@ -418,7 +418,7 @@
       `(((((,(makevar 2) . (,(makevar 3) . ,(makevar 4))) . ,S2) . (((((())))))))))
 
 (define S3 `((,(makevar 3) . ,(makevar 1))
-             (,(makevar 2) . (,(makevar 1) . ,(makevar 0)))
+             (,(makevar 2) . (,(makevar 6) . ,(makevar 0)))
              (,(makevar 4) . ())
              (,(makevar 5) . #f)
              (,(makevar 1) . 3)
@@ -445,7 +445,7 @@
       `(((,(makevar 6) . (_. . ,(peano 6))) . ,S3)))
 
 (test "build-reify-S pair"
-      (run* (S) (build-reify-S (makevar 6) S3 S))
+      (run* (S) (build-reify-S (makevar 2) S3 S))
       `(((,(makevar 6) . (_. . ,(peano 6))) . ,S3)))
 
 ; TODO: Add reify-state/1st-varo tests
