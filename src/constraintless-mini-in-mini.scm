@@ -252,15 +252,15 @@ Syntax:
             (unifyo u-a v-a s s-a)
             (unifyo u-d v-d s-a s1)]))])))
 
-(define (eval-gexpro expr s/c env $)
+(define (eval-gexpro expr st env $)
   (conde
     [(fresh (ge)
        (== `(delay ,ge) expr)
        ; Maturation happens when pulling
-       (== `(delayed eval ,ge ,s/c ,env) $))]
+       (== `(delayed eval ,ge ,st ,env) $))]
     [(fresh (te1 te2 v1 v2 s c s1)
        (== `(== ,te1 ,te2) expr)
-       (== `(,s . ,c) s/c)
+       (== `(,s . ,c) st)
        (eval-texpro te1 env v1)
        (eval-texpro te2 env v2)
        (conde
@@ -270,21 +270,21 @@ Syntax:
     [(fresh (x* ge+)
        (== `(fresh ,x* . ,ge+) expr)
        (=/= '() ge+)
-       (eval-fresho x* ge+ s/c env $))]
+       (eval-fresho x* ge+ st env $))]
     [(fresh (ge+)
        (== `(conde . ,ge+) expr)
        (=/= '() ge+)
-       (eval-condeo ge+ s/c env $))]
+       (eval-condeo ge+ st env $))]
     [(fresh (b* c* ge+ renv)
        (== `(letrec-rel ,b* . ,ge+) expr)
        (ext-reco b* '() env renv)
-       (eval-conjno ge+ s/c renv $))]
+       (eval-conjno ge+ st renv $))]
     [(fresh (id args params ge+ env1 ext-env vargs)
        (== `(apply-rel ,id . ,args) expr)
        (lookupo id env `(closr ,params ,env1 . ,ge+))
        (eval-argso args env vargs)
        (exto params vargs env1 ext-env)
-       (eval-conjno ge+ s/c ext-env $))]))
+       (eval-conjno ge+ st ext-env $))]))
 
 (define (eval-texpro expr env val)
   (conde
@@ -514,9 +514,9 @@ Syntax:
 (define (eval-thunko th $)
   (fresh ()
     (conde
-    [(fresh (gexpr s/c env)
-       (== `(delayed eval ,gexpr ,s/c ,env) th)
-       (eval-gexpro gexpr s/c env $))]
+    [(fresh (gexpr st env)
+       (== `(delayed eval ,gexpr ,st ,env) th)
+       (eval-gexpro gexpr st env $))]
     [(fresh ($1 $2 $1e)
        (== `(delayed mplus ,$1 ,$2) th)
        (eval-thunko $1 $1e)
@@ -526,19 +526,19 @@ Syntax:
        (eval-thunko $1 $1e)
        (bindo $1e gexpr env $))])))
 
-(define (reifyo s/c* out)
+(define (reifyo st* out)
   (fresh()
     (conde
-      [(== '() s/c*) (== '() out)]
+      [(== '() st*) (== '() out)]
       [(fresh (a d va vd)
-         (== `(,a . ,d) s/c*)
+         (== `(,a . ,d) st*)
          (== `(,va . ,vd) out)
          (reify-state/1st-varo a va)
          (reifyo d vd))])))
 
-(define (reify-state/1st-varo s/c out)
+(define (reify-state/1st-varo st out)
   (fresh (s c v reified-S)
-    (== `(,s . ,c) s/c)
+    (== `(,s . ,c) st)
     (walk*o `(var . ()) s v)
     (build-reify-S v '() reified-S)
     (walk*o v reified-S out)))

@@ -302,42 +302,37 @@
       (run* (v) (lookupo 'c env-S1 v))
       `(,(makevar 2)))
 
-(define renv-S1 `((a . ,(makevar 0))
-                  (b . ,(makevar 1))
-                  (c . ,(makevar 2))
-                  (d . ,(makevar 3))
-                  (e . ,(makevar 4))))
 (define eveno-oddo-c*
-  `((closr eveno (x) . (conde [(== '() x)]
-                              [(fresh (a d)
-                                 (== `(,a . ,d) x)
-                                 (oddo d))]))
-    (closr oddo (x) . (fresh (a d)
-                        (== `(,a . ,d) x)
-                        (eveno d)))))
+  `((closr eveno (x) . ((conde [(== '() x)]
+                               [(fresh (a d)
+                                  (== (cons a d) x)
+                                  (apply-rel oddo d))])))
+    (closr oddo (x) . ((fresh (a d)
+                         (== (cons a d) x)
+                         (apply-rel eveno d))))))
 
 (define renv-S1 `((rec ,eveno-oddo-c*) . ,env-S1))
 
 (test "lookupo recursive env closure lookup"
       (run* (v) (lookupo 'eveno renv-S1 v))
-      `((closr (x) ,renv-S1 . (conde [(== '() x)]
-                                     [(fresh (a d)
-                                        (== `(,a . ,d) x)
-                                        (oddo d))]))))
+      `((closr (x) ,renv-S1 . ((conde [(== '() x)]
+                                      [(fresh (a d)
+                                         (== (cons a d) x)
+                                         (oddo d))])))))
 
 ; lookup-reco tests
 (test "lookup-reco recursive env closure lookup 1"
       (run* (v) (lookup-reco 'eveno eveno-oddo-c* renv-S1 env-S1 v))
-      `((closr (x) ,renv-S1 . (conde [(== '() x)]
-                                     [(fresh (a d)
-                                        (== `(,a . ,d) x)
-                                        (oddo d))]))))
+      `((closr (x) ,renv-S1 . ((conde [(== '() x)]
+                                      [(fresh (a d)
+                                         (== (cons a d) x)
+                                         (oddo d))])))))
 
 (test "lookup-reco recursive env closure lookup 2"
       (run* (v) (lookup-reco 'oddo eveno-oddo-c* renv-S1 env-S1 v))
-      `((closr (x) ,renv-S1 . (fresh (a d)
-                                (== `(,a . ,d) x)
-                                (eveno d)))))
+      `((closr (x) ,renv-S1 . ((fresh (a d)
+                                 (== (cons a d) x)
+                                 (eveno d))))))
 
 (test "lookup-reco recursive env variable lookup"
       (run* (v) (lookup-reco 'c eveno-oddo-c* renv-S1 env-S1 v))
@@ -378,9 +373,9 @@
 
 (test "eval-texpro closr lookup"
       (run* (v) (eval-texpro 'oddo renv-S1 v))
-      `((closr (x) ,renv-S1 . (fresh (a d)
-                                (== `(,a . ,d) x)
-                                (eveno d)))))
+      `((closr (x) ,renv-S1 . ((fresh (a d)
+                                 (== (cons a d) x)
+                                 (eveno d))))))
 
 (test "eval-texpro variable lookup"
       (run* (v) (eval-texpro 'c renv-S1 v))
@@ -455,6 +450,7 @@
              (,(makevar 5) . #f)
              (,(makevar 1) . 3)
              (,(makevar 2) . apple)))
+
 (test "reify-state/1st-varo"
       (run* (v) (reify-state/1st-varo `(,S4 . (((((((())))))))) v))
       `(((_. . ,(peano 0)) . apple)))
@@ -464,8 +460,45 @@
       (run* (ans*) (reifyo `((,S4 . (((((((())))))))) (,S3 . (((((((()))))))))) ans*))
       `((((_. . ,(peano 0)) . apple) apple)))
 
-; TODO: Add eval-gexpro tests
-; TODO: Add exto tests
-; TODO: Add ext-reco tests
+; eval-gexpro tests
+(test "eval-gexpro =="
+      (run* ($) (eval-gexpro '(== d 3) st1 env-S1 $))
+      `((,st1)))
+
+(test "eval-gexpro fresh 1"
+      (run* ($) (eval-gexpro '(fresh (x) (== x c)) st1 env-S1 $))
+      `(((((,(makevar 5) . (,(makevar 1) . ,(makevar 0))) . ,S1) . ((((((()))))))))))
+
+(test "eval-gexpro fresh 2"
+      (run* ($) (eval-gexpro '(fresh (x y) (== x y)) st1 env-S1 $))
+      `(((((,(makevar 5) . ,(makevar 6)) . ,S1) . (((((((())))))))))))
+
+(test "eval-gexpro fresh 2"
+      (run* ($) (eval-gexpro '(fresh (x y) (== x y)) st1 env-S1 $))
+      `(((((,(makevar 5) . ,(makevar 6)) . ,S1) . (((((((())))))))))))
+
+(test "eval-gexpro conde"
+      (run* ($) (eval-gexpro '(conde [(== e 6) (== a 3)]
+                                     [(== e 6) (fresh (x) (== x 7))])
+                             st1
+                             env-S1
+                             $))
+      `(((((,(makevar 5) . 7) . ((,(makevar 4) . 6) . ,S1)) . ((((((()))))))))))
+
+(test "eval-gexpro apply-rel"
+      (run* ($) (eval-gexpro '(apply-rel oddo '(())) st1 renv-S1 $))
+      `(((((,(makevar 6) . ()) . ((,(makevar 5) . ()) . ,S1)) . (((((((())))))))))))
+
+(test "eval-gexpro letrec-rel"
+      (run* ($) (eval-gexpro '(letrec-rel ((eveno (x) (conde [(== '() x)]
+                                                             [(fresh (a d)
+                                                                (== (cons a d) x)
+                                                                (apply-rel oddo d))]))
+                                           (oddo (x) (fresh (a d)
+                                                       (== (cons a d) x)
+                                                       (apply-rel eveno d))))
+                                          (apply-rel oddo '(()))) st1 S1 $))
+      `(((((,(makevar 6) . ()) . ((,(makevar 5) . ()) . ,S1)) . (((((((())))))))))))
+
 ; TODO: Add occurso tests
 ; TODO: Add ext-so tests
