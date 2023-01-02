@@ -1,0 +1,43 @@
+To summarize, the challenges we face in synthesizing miniKanren programs are:
+\begin{itemize}
+  \item The specification of values that do occur as the output of synthesized
+    programs. Equivalently, synthesizing programs with \Verb|run*| semantics.
+  \item Efficient synthesis of programs.
+  \item Easy specification of synthesis of programs.
+  \item Having a metacircular implementation.
+\end{itemize}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+% Experiment #1 : try to implement something that looks like miniKanren syntax
+% Experiment #2 : try heuristics (dynamic reordering of conjunctions, break
+% relationality by calling assoc when substitution is ground)
+% Experiment #3 : try staging
+% Experiment #4 : try guiding the search
+% Experiment #5 : redesign language & reimplement
+% 
+% Related work : check out inductive logic programming
+% 
+% Evidence of correctness (fuzz testing end/individual components : same answers
+% and same order gives evidence that it is similar to other implementations,
+% mechanized proof, paper and pencil proof)
+% 
+% Examples that show off the system synthesizing (start now : do partial synthesis)
+% - Go through different programs and see how they can be synthesized

@@ -1,0 +1,15 @@
+Having motivated the need for redesigning miniKanren, we layout the properties
+we desire from our miniKanren system.
+\subsection{Design Goals}
+\begin{enumerate}
+  \item Program synthesis problems should be easy to specify, possibly at the
+    cost of human readability.
+  \item The design should enable a purely relational implementation. Using
+    impure features goes against the philosophy of relational programming, and
+    thus must be avoided.
+  \item The design should enable a metacircular implementation, as
+    metacircularity is an important test of the expressivity of a language.
+  \item The design should enable an implementation that fails fast. This is
+    desirable because for good performance, branches with no answers
+    must be discarded early.
+\end{enumerate}

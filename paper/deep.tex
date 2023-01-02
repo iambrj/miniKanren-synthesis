@@ -1,1 +1,16 @@
-In this approach, 
+\citet{joshi2021metakanren} explore implementing a deep relational interpreter
+for a minimal subset of miniKanren called metaKanren and demonstrate synthesis.
+However, as the authors admit, such an implementation is slow even for
+synthesizing parts of small programs, let alone entire programs. Also, the
+minimality of the interpreted language imposes a serious limitation on the
+expressivity of synthesized programs --- in particular, metaKanren is unable run
+metacircularly. Furthermore, metaKanren \textit{cannot} be made metacircular
+even by extending the language due to metaKanren's interpreter's design. To
+elaborate, as \Verb|eval-programo| is a binary relation between a program and
+the program's output, \Verb|eval-programo| must implement reification. A crucial
+property of reification is that semantically equivalent programs produce the
+same output, irrespective of constraint order. To implement this property,
+sorting the constraint stores lexicographically is required. But sorting
+arbitrary data lexicographically is not possible in miniKanren, the interpreting
+language! This motivates a radical reimagining and redesign of miniKanren with
+program synthesis and relational implementation as explicit objectives.

@@ -183,8 +183,8 @@ because with a \Verb|run 1| semantics we can only ever say ``so-and-so should be
 observe that we can express the latter.
 
 To have \Verb|run*| semantics at the interpreted level, \Verb|eval-programo|
-express when goals fail. To see why, consider how \Verb|eval-programo| would
-interpret the following example:
+must express when goals fail. To see why, consider how \Verb|eval-programo|
+would interpret the following example:
 \begin{Verbatim}
 (run 1 (e1 e2)
   (eval-programo `(run* (z) (disj ,e1
@@ -203,5 +203,6 @@ nature of miniKanren!
 If \Verb|eval-programo| were a deep embedding (i.e. used first-order semantic
 representations) the above limitation can be overcome since success/failure of
 goals can be expressed as conditions on the semantic representations, preserving
-relationality. This motivates the need for a deep embedding of miniKanren.
+relationality. This suggests a deep embedding of miniKanren.
+
 
