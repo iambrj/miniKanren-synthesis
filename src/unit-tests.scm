@@ -318,7 +318,7 @@
       `((closr (x) ,renv-S1 . ((conde [(== '() x)]
                                       [(fresh (a d)
                                          (== (cons a d) x)
-                                         (oddo d))])))))
+                                         (apply-rel oddo d))])))))
 
 ; lookup-reco tests
 (test "lookup-reco recursive env closure lookup 1"
@@ -326,13 +326,13 @@
       `((closr (x) ,renv-S1 . ((conde [(== '() x)]
                                       [(fresh (a d)
                                          (== (cons a d) x)
-                                         (oddo d))])))))
+                                         (apply-rel oddo d))])))))
 
 (test "lookup-reco recursive env closure lookup 2"
       (run* (v) (lookup-reco 'oddo eveno-oddo-c* renv-S1 env-S1 v))
       `((closr (x) ,renv-S1 . ((fresh (a d)
                                  (== (cons a d) x)
-                                 (eveno d))))))
+                                 (apply-rel eveno d))))))
 
 (test "lookup-reco recursive env variable lookup"
       (run* (v) (lookup-reco 'c eveno-oddo-c* renv-S1 env-S1 v))
@@ -375,7 +375,7 @@
       (run* (v) (eval-texpro 'oddo renv-S1 v))
       `((closr (x) ,renv-S1 . ((fresh (a d)
                                  (== (cons a d) x)
-                                 (eveno d))))))
+                                 (apply-rel eveno d))))))
 
 (test "eval-texpro variable lookup"
       (run* (v) (eval-texpro 'c renv-S1 v))

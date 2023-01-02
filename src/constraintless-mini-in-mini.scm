@@ -462,42 +462,42 @@ Syntax:
 
 (define (eval-programo expr out)
   (conde
-    [(fresh (lvar gexpr $ s/c*)
+    [(fresh (lvar gexpr $ st*)
        (symbolo lvar)
        (== `(run* (,lvar) ,gexpr) expr)
        (eval-gexpro `(fresh (,lvar) ,gexpr) `(,empty-s . ,peano-zero) init-env $)
-       (take-allo $ s/c*)
-       (reifyo s/c* out))]
-    [(fresh (n lvar gexpr $ s/c*)
+       (take-allo $ st*)
+       (reifyo st* out))]
+    [(fresh (n lvar gexpr $ st*)
        (symbolo lvar)
        (== `(run ,n (,lvar) ,gexpr) expr)
        (eval-gexpro `(fresh (,lvar) ,gexpr) `(,empty-s . ,peano-zero) init-env $)
-       (take-no n $ s/c*)
-       (reifyo s/c* out))]))
+       (take-no n $ st*)
+       (reifyo st* out))]))
 
-(define (take-allo $ s/c*)
+(define (take-allo $ st*)
   (fresh ($1)
     (pullo $ $1)
     (conde
-      [(== '() $1) (== '() s/c*)]
-      [(fresh (a d-s/c* $d)
+      [(== '() $1) (== '() st*)]
+      [(fresh (a d-st* $d)
          (== `(,a . ,$d) $1)
-         (== `(,a . ,d-s/c*) s/c*)
-         (take-allo $d d-s/c*))])))
+         (== `(,a . ,d-st*) st*)
+         (take-allo $d d-st*))])))
 
-(define (take-no n $ s/c*)
+(define (take-no n $ st*)
   (conde
-    [(== '() n) (== '() s/c*)]
+    [(== '() n) (== '() st*)]
     [(=/= '() n)
      (fresh ($1)
        (pullo $ $1)
        (conde
-         [(== '() $1) (== '() s/c*)]
-         [(fresh (n-1 d-s/c* a d)
+         [(== '() $1) (== '() st*)]
+         [(fresh (n-1 d-st* a d)
             (== `(,a . ,d) $1)
             (== `(,n-1) n)
-            (== `(,a . ,d-s/c*) s/c*)
-            (take-no n-1 d d-s/c*))]))]))
+            (== `(,a . ,d-st*) st*)
+            (take-no n-1 d d-st*))]))]))
 
 (define (pullo $ $1)
   (conde
