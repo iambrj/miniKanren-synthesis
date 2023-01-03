@@ -147,9 +147,6 @@ Syntax:
          (not-assp-subo v t))])))
 
 (define (ext-so u v s s1)
-  (== `((,u . ,v) . ,s) s1))
-
-#;(define (ext-so u v s s1)
   (fresh (occurs?)
     (occurso u v s occurs?)
     (conde
@@ -164,8 +161,8 @@ Syntax:
     (walko v-unwalked s v)
     (conde
       [(== s s1) (var=?o u v)]
-      [(var?o u) (var?o v) (ext-so u v s s1) (var=/=o u v)]
-      [(== '() v) (ext-so u v s s1) (var?o u)]
+      [(var?o u) (var?o v) (var=/=o u v) (ext-so u v s s1)]
+      [(== '() v) (var?o u) (ext-so u v s s1)]
       [(booleano v) (var?o u) (ext-so u v s s1)]
       [(numbero v) (var?o u) (ext-so u v s s1)]
       [(symbolo v) (var?o u) (ext-so u v s s1)]

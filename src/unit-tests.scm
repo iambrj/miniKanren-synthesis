@@ -525,16 +525,27 @@
       (run* (occurs?) (occurso (makevar 0) #t '() occurs?))
       '(#f))
 
-(test "occurso success subtree check"
+(test "occurso success recursive check"
       (run* (occurs?) (occurso (makevar 0) (makevar 4)
                                `((,(makevar 4) . (,(makevar 2) . ,(makevar 3)))
                                  (,(makevar 2) . (,(makevar 0) . ,(makevar 1)))) occurs?))
       '(#t))
 
-(test "occurso failure subtree check"
+(test "occurso failure recursive check"
       (run* (occurs?) (occurso (makevar 0) (makevar 4)
                                `((,(makevar 4) . (,(makevar 2) . ,(makevar 3)))
                                  (,(makevar 2) . (,(makevar 1) . ,(makevar 1)))) occurs?))
       '(#f))
 
-; TODO: Add ext-so tests
+; ext-so tests
+(test "ext-so failure"
+      (run* (s1) (ext-so (makevar 3) (makevar 4) `((,(makevar 4) . (,(makevar 2) . ,(makevar 3)))
+                                                   (,(makevar 2) . (,(makevar 1) . ,(makevar 1)))) s1))
+      '(#f))
+
+(test "ext-so success"
+      (run* (s1) (ext-so (makevar 0) (makevar 1) `((,(makevar 4) . (,(makevar 2) . ,(makevar 3)))
+                                                   (,(makevar 2) . (,(makevar 1) . ,(makevar 1)))) s1))
+      `(((,(makevar 0) . ,(makevar 1))
+         (,(makevar 4) . (,(makevar 2) . ,(makevar 3)))
+         (,(makevar 2) . (,(makevar 1) . ,(makevar 1))))))
