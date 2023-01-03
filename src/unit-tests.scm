@@ -500,5 +500,41 @@
                                           (apply-rel oddo '(()))) st1 S1 $))
       `(((((,(makevar 6) . ()) . ((,(makevar 5) . ()) . ,S1)) . (((((((())))))))))))
 
-; TODO: Add occurso tests
+; occurso tests
+(test "occurso equality"
+      (run* (occurs?) (occurso (makevar 0) (makevar 0) '() occurs?))
+      '(#t))
+
+(test "occurso pair"
+      (run* (occurs?) (occurso (makevar 0) `(3 . ,(makevar 0)) '() occurs?))
+      '(#t))
+
+(test "occurso empty list"
+      (run* (occurs?) (occurso (makevar 0) '() '() occurs?))
+      '(#f))
+
+(test "occurso symbol"
+      (run* (occurs?) (occurso (makevar 0) 'cat '() occurs?))
+      '(#f))
+
+(test "occurso number"
+      (run* (occurs?) (occurso (makevar 0) 5 '() occurs?))
+      '(#f))
+
+(test "occurso boolean"
+      (run* (occurs?) (occurso (makevar 0) #t '() occurs?))
+      '(#f))
+
+(test "occurso success subtree check"
+      (run* (occurs?) (occurso (makevar 0) (makevar 4)
+                               `((,(makevar 4) . (,(makevar 2) . ,(makevar 3)))
+                                 (,(makevar 2) . (,(makevar 0) . ,(makevar 1)))) occurs?))
+      '(#t))
+
+(test "occurso failure subtree check"
+      (run* (occurs?) (occurso (makevar 0) (makevar 4)
+                               `((,(makevar 4) . (,(makevar 2) . ,(makevar 3)))
+                                 (,(makevar 2) . (,(makevar 1) . ,(makevar 1)))) occurs?))
+      '(#f))
+
 ; TODO: Add ext-so tests

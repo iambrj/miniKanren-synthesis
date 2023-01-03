@@ -113,6 +113,7 @@ Syntax:
       [(numbero v) (== #f occurs?)]
       [(booleano v) (== #f occurs?)]
       [(var?o v) (var=?o x v) (== #t occurs?)]
+      [(var?o v) (var=/=o x v) (== #f occurs?)]
       [(fresh (av dv occurs-av? occurs-dv?)
          (== `(,av . ,dv) v)
          (=/= 'var av)
