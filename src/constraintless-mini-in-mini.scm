@@ -278,7 +278,7 @@ Syntax:
        (ext-reco b* '() env renv)
        (eval-conjno ge+ st renv $))]
     [(fresh (id args params ge+ env1 ext-env vargs)
-       (== `(apply-rel ,id . ,args) expr)
+       (== `(,id . ,args) expr)
        (lookupo id env `(closr ,params ,env1 . ,ge+))
        (eval-argso args env vargs)
        (exto params vargs env1 ext-env)
