@@ -48,7 +48,8 @@ Syntax:
 (load "../../faster-minikanren/mk-vicare.scm")
 (load "../../faster-minikanren/mk.scm")
 
-(define empty-s '())
+(define empty-S '())
+(define empty-T '())
 (define peano-zero '())
 (define init-env '())
 
@@ -61,6 +62,25 @@ Syntax:
     [(fresh (p1)
        (== `(,p1) p)
        (peanoo p1))]))
+
+; Abandon the list approach, make them constraint sets
+; How do you write the problem of synthesis when talking about lists?
+; Can you make an argument for using sets instead of lists?
+
+; XXX: how will using (absento p1 p2) to determine <? affect performance here?
+; In general be careful as p1 and p2 may be fresh
+(define (peano< p1 p2 <?)
+  (fresh ()
+    (peanoo p1)
+    (peanoo p2)
+    (conde
+      [(== p1 p2) (== #f <?)]
+      [(== '() p1) (=/= '() p2) (== #t <?)]
+      [(=/= '() p1) (== '() p2) (== #f <?)]
+      [(fresh (d1 d2)
+         (== `(,d1) p1)
+         (== `(,d2) p2)
+         (peano< d1 d2 <?))])))
 
 (define (var?o x)
   (fresh (val)
@@ -256,15 +276,24 @@ Syntax:
        (== `(delay ,ge) expr)
        ; Maturation happens when pulling
        (== `(delayed eval ,ge ,st ,env) $))]
-    [(fresh (te1 te2 v1 v2 s c s1)
+    [(fresh (te1 te2 v1 v2 S C T S1)
        (== `(== ,te1 ,te2) expr)
-       (== `(,s . ,c) st)
+       (== `(,S ,C ,T) st)
        (eval-texpro te1 env v1)
        (eval-texpro te2 env v2)
        (conde
-         [(== '() $) (== #f s1)]
-         [(== `((,s1 . ,c)) $) (=/= #f s1)])
-       (unifyo v1 v2 s s1))]
+         [(== '() $) (== #f S1)]
+         [(=/= #f S1)
+          (fresh (T^)
+            (reform-To T S1 T^)
+            (conde
+              [(== #f T^) (== '() $)]
+              [(=/= #f T^) (== `((,S1 ,C ,T^)) $)]))])
+       (unifyo v1 v2 S S1))]
+    [(fresh (te v)
+       (== `(numbero ,te) expr)
+       (eval-texpro te env v)
+       (eval-numbero v st env $))]
     [(fresh (x* ge+)
        (== `(fresh ,x* . ,ge+) expr)
        (=/= '() ge+)
@@ -311,6 +340,86 @@ Syntax:
        (eval-texpro e1 env v1)
        (eval-texpro e2 env v2))]))
 
+(define (eval-numbero v-unwalked st env $)
+  (fresh (v S C T)
+    (== `(,S ,C ,T) st)
+    (walko v-unwalked S v)
+    (conde
+    [(== '() $)
+     (conde
+       [(== '() v)]
+       [(booleano v)]
+       [(symbolo v)]
+       [(fresh (a d)
+          (== (cons a d) v)
+          (=/= 'var a))])]
+    [(numbero v)
+     (== `(,st) $)]
+    [(fresh (p ext)
+       (== `(,S ,C ,T) st)
+       (== (cons 'var p) v)
+       (ext-To v T 'num ext)
+       (conde
+         [(== #f ext) (== '() $)]
+         [(== '() ext) (== `(,st) $)]
+         [(== `(,v . num) ext) (== `((,S ,C (,ext . ,T))) $)]))])))
+
+(define (ext-To x T tag ext)
+  (conde
+    [(== '() T) (== `(,x . ,tag) ext)]
+    [(fresh (v vtag d)
+       (== `((,v . ,vtag) . ,d) T)
+       (conde
+         [(== v x)
+          (conde
+            [(== tag vtag) (== '() ext)]
+            [(=/= tag vtag) (== #f ext)])]
+         [(=/= v x)
+          (ext-To x d tag ext)]))]))
+
+(define (reform-To T S T^)
+  (conde
+    [(== '() T) (== '() T^)]
+    [(fresh (u-unwalked u tag Td Td^)
+       (== (cons (cons u-unwalked tag) Td) T)
+       (walko u-unwalked S u)
+       (reform-To Td S Td^)
+       (conde
+         [(var?o u)
+          (fresh (ext)
+            (ext-To u Td^ tag ext)
+            (conde
+              [(== '() ext) (== Td^ T^)]
+              [(fresh (a d)
+                 (== (cons a d) ext)
+                 (== `(,ext . ,Td^) T^))]
+              [(== #f ext) (== #f T^)]))]
+         [(== 'num tag)
+          (conde
+            [(== Td^ T^)
+             (numbero u)]
+            [(conde
+               [(== '() u)]
+               [(booleano u)]
+               [(symbolo u)]
+               [(fresh (a d)
+                  (== `(,a . ,d) u)
+                  (=/= a 'var))])
+             (== #f T^)])]
+         [(== 'sym tag)
+          (conde
+            [(== Td^ T^)
+             (symbolo u)]
+            [(conde
+               [(== '() u)]
+               [(booleano u)]
+               [(numbero u)]
+               [(fresh (a d)
+                  (== `(,a . ,d) u)
+                  (=/= a 'var))])
+             (== #f T^)])]
+         [(== #f Td^) (== #f T^)]))]))
+
 ; [[GoalExpr]] -> State -> Env -> Stream State
 (define (eval-condeo conjn-ge* st env $)
   (conde
@@ -342,11 +451,11 @@ Syntax:
   (conde
     [(== '() x*)
      (eval-conjno ge+ st env $)]
-    [(fresh (x-a x-d s c env1)
+    [(fresh (x-a x-d S C T env1)
        (== `(,x-a . ,x-d) x*)
-       (== `(,s . ,c) st)
-       (exto `(,x-a) `((var . ,c)) env env1)
-       (eval-fresho x-d ge+ `(,s . (,c)) env1 $))]))
+       (== `(,S ,C ,T) st)
+       (exto `(,x-a) `((var . ,C)) env env1)
+       (eval-fresho x-d ge+ `(,S (,C) ,T) env1 $))]))
 
 ; Stream ($) := () ; empty stream
 ;             | (state . $) ; mature stream
@@ -463,13 +572,13 @@ Syntax:
     [(fresh (lvar gexpr $ st*)
        (symbolo lvar)
        (== `(run* (,lvar) ,gexpr) expr)
-       (eval-gexpro `(fresh (,lvar) ,gexpr) `(,empty-s . ,peano-zero) init-env $)
+       (eval-gexpro `(fresh (,lvar) ,gexpr) `(,empty-S ,peano-zero ,empty-T) init-env $)
        (take-allo $ st*)
        (reifyo st* out))]
     [(fresh (n lvar gexpr $ st*)
        (symbolo lvar)
        (== `(run ,n (,lvar) ,gexpr) expr)
-       (eval-gexpro `(fresh (,lvar) ,gexpr) `(,empty-s . ,peano-zero) init-env $)
+       (eval-gexpro `(fresh (,lvar) ,gexpr) `(,empty-S ,peano-zero ,empty-T) init-env $)
        (take-no n $ st*)
        (reifyo st* out))]))
 
@@ -535,11 +644,86 @@ Syntax:
          (reifyo d vd))])))
 
 (define (reify-state/1st-varo st out)
-  (fresh (s c v reified-S)
-    (== `(,s . ,c) st)
-    (walk*o `(var . ()) s v)
+  (fresh (S C T v reified-v reified-S impure-T T)
+    (== `(,S ,C ,impure-T) st)
+    (walk*o `(var . ()) S v)
     (build-reify-S v '() reified-S)
-    (walk*o v reified-S out)))
+    (walk*o v reified-S out)
+    (purify-To impure-T reified-S T)))
+
+#|
+(define (reify-state/1st-varo st out)
+  (fresh (S C T v reified-v reified-S impure-T T)
+    (== `(,S ,C ,impure-T) st)
+    (walk*o `(var . ()) S v)
+    (build-reify-S v '() reified-S)
+    (walk*o v reified-S reified-v)
+    (purify-To impure-T reified-S T)
+    (prettifyo reified-v reified-S T out)))
+|#
+
+(define (prettifyo v reified-S T out)
+  (fresh (symT numT unreified-symT unreified-numT unsorted-symT unsorted-numT)
+    (group-tag 'num reified-T unsorted-numT)
+    (group-tag 'sym reified-T unsorted-symT)
+    (insertion-sort-peano-list unsorted-symT unreified-symT)
+    (insertion-sort-peano-list unsorted-numT unreified-numT)
+    (walk*o unreified-symT reified-S symT)
+    (walk*o unreified-numT reified-S numT)
+    (conde
+      [(== '() symT) (== '() numT) v]
+      [(=/= '() symT) (== '() numT) `(,v . (sym . ,symT))]
+      [(== '() symT) (=/= '() numT) `(,v . (num . ,numT))]
+      [(=/= '() symT) (=/= '() numT)  `(,v . ((num . ,numT) (sym . ,symT)))])))
+
+(define (purify-To T r T^)
+  (conde
+    [(== '() T) (== '() T^)]
+    [(fresh (u-unwalked tag u Ta Td purified-Td)
+       (== (cons Ta Td) T)
+       (== (cons u-unwalked tag) Ta)
+       (walko u-unwalked r u)
+       (purify-To Td r purified-Td)
+       (conde
+         [(var?o u) (== purified-Td T^)]
+         [(fresh (p)
+            (== (cons '_. p) u)
+            (peanoo p))
+          (== (cons Ta purified-Td) T^)]))]))
+
+(define (group-tag tag T tagged-T)
+  (conde
+    [(== '() T) (== '() tagged-T)]
+    [(fresh (u-tag u Td tagged-Td)
+       (== `(((var . u) . ,u-tag) . ,Td) T)
+       (conde
+         [(== u-tag tag) (== `(,u . ,tagged-Td) tagged-T)]
+         [(=/= u-tag tag) (== tagged-Td tagged-T)])
+       (group-tag tag Td tagged-Td))]))
+
+(define (insertion-sort-peano-list L sorted-L)
+  (conde
+    [(== '() L) (== '() sorted-L)]
+    [(fresh (a d sorted-d)
+       (== (cons a d) L)
+       ; XXX : sensitive conjunction order, both recursive relations
+       ; this order suited for forward run
+       (insertion-sort-peano-list d sorted-d)
+       (insert-into sorted-d a sorted-L))]))
+
+(define (insert-into sorted-L u inserted-L)
+  (conde
+    [(== '() sorted-L) (== `(,u) inserted-L)]
+    [(fresh (a d <?)
+       (== (cons a d) sorted-L)
+       (peano< a u <?)
+       (conde
+         [(== #t <?)
+          (fresh (inserted-d)
+            (insert-into d u inserted-d)
+            (== (cons a inserted-d) inserted-L))]
+         [(== #f <?)
+          (== (cons u sorted-L) inserted-L)]))]))
 
 (define (build-reify-S v-unwalked s s1)
   (fresh (v)

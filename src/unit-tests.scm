@@ -5,69 +5,9 @@
 
 (define env '((d var (())) (a var ()) (q var)))
 
-(define initS/3 '(() . (((())))))
+(define initS/3 '(() (((()))) ()))
 
 (printf "Running unit tests...\n")
-
-(define conjn-1 '((== 5 d)))
-(define conjn-2 '((== 5 d) (== (cons a d) q)))
-(define conjn-3 '((== 3 a) (== 5 d) (== (cons a d) q)))
-
-(test "eval-conjno 1"
-      (run 1 ($) (eval-conjno conjn-1 initS/3 env $))
-      `(((((,(makevar 2) . 5)) . (((())))))))
-
-(test "eval-conjno 2"
-      (run 1 ($) (eval-conjno conjn-2 initS/3 env $))
-      `(((((,(makevar 0) . (,(makevar 1) . ,(makevar 2))) (,(makevar 2) . 5))
-          . (((())))))))
-
-(test "eval-conjno 3"
-      (run 1 ($) (eval-conjno conjn-3 initS/3 env $))
-      `(((((,(makevar 0) . (,(makevar 1) . ,(makevar 2)))
-           (,(makevar 2) . 5)
-           (,(makevar 1) . 3))
-          . (((())))))))
-
-(define disjn-1 '(((== 5 d))))
-(define disjn-2 '(((== 5 d)) ((== 4 d))))
-(define disjn-3 `(((== 5 d))
-                  ((== 4 d))
-                  ,conjn-3))
-(define disjn-4 `(((== 5 d) (== 'cat a) (== (cons a d) q))
-                  ((== 'apple d) (== 4 a) (== (cons a d) q))
-                  ,conjn-3))
-
-(test "eval-condeo 1"
-      (run 1 ($) (eval-condeo disjn-1 initS/3 env $))
-      `(((((,(makevar 2) . 5)) . (((())))))))
-
-(test "eval-condeo 2"
-      (run 1 ($) (eval-condeo disjn-2 initS/3 env $))
-      `(((((,(makevar 2) . 5)) . (((()))))
-         (((,(makevar 2) . 4)) . (((())))))))
-
-(test "eval-condeo 3"
-      (run 1 ($) (eval-condeo disjn-3 initS/3 env $))
-      `(((((,(makevar 2) . 5)) . (((()))))
-         (((,(makevar 2) . 4)) . (((()))))
-         (((,(makevar 0) . (,(makevar 1) . ,(makevar 2)))
-           (,(makevar 2) . 5)
-           (,(makevar 1) . 3))
-          . (((())))))))
-
-(test "eval-condeo 4"
-      (run 1 ($) (eval-condeo disjn-4 initS/3 env $))
-      `(((((,(makevar 0) . (,(makevar 1) . ,(makevar 2)))
-           (,(makevar 1) . cat)
-           (,(makevar 2) . 5)) . (((()))))
-         (((,(makevar 0) . (,(makevar 1) . ,(makevar 2)))
-           (,(makevar 1) . 4)
-           (,(makevar 2) . apple)) . (((()))))
-         (((,(makevar 0) . (,(makevar 1) . ,(makevar 2)))
-           (,(makevar 2) . 5)
-           (,(makevar 1) . 3))
-          . (((())))))))
 
 ; walko tests
 (define S1 `((,(makevar 3) . ,(makevar 1))
@@ -254,7 +194,7 @@
                  (d . ,(makevar 3))
                  (e . ,(makevar 4))))
 
-(define st1 `(,S1 . (((((())))))))
+(define st1 `(,S1 (((((()))))) ()))
 
 (test "mpluso first argument empty stream"
       (run* ($) (mpluso `() `(delayed eval (== 'apple a) ,st1 ,env-S1) $))
@@ -282,11 +222,11 @@
 
 (test "bindo first argument mature stream"
       (run* ($) (bindo `(,st1) '(== 'cat e) env-S1 $))
-      `(((((,(makevar 4) . cat) . ,S1) . (((((())))))))))
+      `(((((,(makevar 4) . cat) . ,S1) (((((()))))) ()))))
 
 (test "bindo first argument (mature delayed) stream"
       (run* ($) (bindo `(,st1 . (delayed eval (== b d) ,st1 ,env-S1)) '(== 'cat e) env-S1 $))
-      `(((((,(makevar 4) . cat) . ,S1) . (((((())))))) .
+      `(((((,(makevar 4) . cat) . ,S1) (((((()))))) ()) .
          (delayed bind (delayed eval (== b d) ,st1 ,env-S1) (== 'cat e) ,env-S1))))
 
 (test "bindo first argument delayed stream"
@@ -337,6 +277,70 @@
 (test "lookup-reco recursive env variable lookup"
       (run* (v) (lookup-reco 'c eveno-oddo-c* renv-S1 env-S1 v))
       `(,(makevar 2)))
+
+; eval-conjn tests
+(define conjn-1 '((== 5 d)))
+(define conjn-2 '((== 5 d) (== (cons a d) q)))
+(define conjn-3 '((== 3 a) (== 5 d) (== (cons a d) q)))
+
+(test "eval-conjno 1"
+      (run 1 ($) (eval-conjno conjn-1 initS/3 env $))
+      `(((((,(makevar 2) . 5)) (((()))) ()))))
+
+(test "eval-conjno 2"
+      (run 1 ($) (eval-conjno conjn-2 initS/3 env $))
+      `(((((,(makevar 0) . (,(makevar 1) . ,(makevar 2))) (,(makevar 2) . 5))
+          (((()))) ()))))
+
+(test "eval-conjno 3"
+      (run 1 ($) (eval-conjno conjn-3 initS/3 env $))
+      `(((((,(makevar 0) . (,(makevar 1) . ,(makevar 2)))
+           (,(makevar 2) . 5)
+           (,(makevar 1) . 3))
+          (((())))
+          ()))))
+
+; eval-disjn tests
+(define disjn-1 '(((== 5 d))))
+(define disjn-2 '(((== 5 d)) ((== 4 d))))
+(define disjn-3 `(((== 5 d))
+                  ((== 4 d))
+                  ,conjn-3))
+(define disjn-4 `(((== 5 d) (== 'cat a) (== (cons a d) q))
+                  ((== 'apple d) (== 4 a) (== (cons a d) q))
+                  ,conjn-3))
+
+(test "eval-condeo 1"
+      (run 1 ($) (eval-condeo disjn-1 initS/3 env $))
+      `(((((,(makevar 2) . 5)) (((()))) ()))))
+
+(test "eval-condeo 2"
+      (run 1 ($) (eval-condeo disjn-2 initS/3 env $))
+      `(((((,(makevar 2) . 5)) (((()))) ())
+         (((,(makevar 2) . 4)) (((()))) ()))))
+
+(test "eval-condeo 3"
+      (run 1 ($) (eval-condeo disjn-3 initS/3 env $))
+      `(((((,(makevar 2) . 5)) (((()))) ())
+         (((,(makevar 2) . 4)) (((()))) ())
+         (((,(makevar 0) . (,(makevar 1) . ,(makevar 2)))
+           (,(makevar 2) . 5)
+           (,(makevar 1) . 3))
+          (((())))
+          ()))))
+
+(test "eval-condeo 4"
+      (run 1 ($) (eval-condeo disjn-4 initS/3 env $))
+      `(((((,(makevar 0) . (,(makevar 1) . ,(makevar 2)))
+           (,(makevar 1) . cat)
+           (,(makevar 2) . 5)) (((()))) ())
+         (((,(makevar 0) . (,(makevar 1) . ,(makevar 2)))
+           (,(makevar 1) . 4)
+           (,(makevar 2) . apple)) (((()))) ())
+         (((,(makevar 0) . (,(makevar 1) . ,(makevar 2)))
+           (,(makevar 2) . 5)
+           (,(makevar 1) . 3))
+          (((()))) ()))))
 
 ; eval-texpro tests
 (test "eval-texpro number"
@@ -405,12 +409,120 @@
 ; eval-fresho tests
 (define S2 `((,(makevar 1) . 3)
              (,(makevar 0) . apple)))
-(define st2 `(,S2 . ((()))))
+(define st2 `(,S2 ((())) ()))
 (define renv-S2 `((a . ,(makevar 0))
                   (b . ,(makevar 1))))
 (test "eval-fresho"
       (run* ($) (eval-fresho '(c d e) '((== c (cons d e))) st2 renv-S2 $))
-      `(((((,(makevar 2) . (,(makevar 3) . ,(makevar 4))) . ,S2) . (((((())))))))))
+      `(((((,(makevar 2) . (,(makevar 3) . ,(makevar 4))) . ,S2) (((((()))))) ()))))
+
+; ext-To tests
+(test "ext-To success empty list"
+      (run* (ext) (ext-To (makevar 0)
+                          `((,(makevar 1) . num) (,(makevar 0) . num))
+                          'num
+                          ext))
+      `(()))
+
+(test "ext-To success extension"
+      (run* (ext) (ext-To (makevar 1)
+                          `((,(makevar 0) . num))
+                          'num
+                          ext))
+      `((,(makevar 1) . num)))
+
+(test "ext-To failure"
+      (run* (ext) (ext-To (makevar 0)
+                          `((,(makevar 1) . num) (,(makevar 0) . sym))
+                          'num
+                          ext))
+      `(#f))
+
+; reform-To tests
+(test "reform-To discarding redundant constraints"
+      (run* (T) (reform-To `((,(makevar 2) . num)
+                             (,(makevar 1) . num)
+                             (,(makevar 0) . sym))
+                           `((,(makevar 1) . 3)
+                             (,(makevar 2) . ,(makevar 3))
+                             (,(makevar 4) . ,(makevar 5))) T))
+      `(((,(makevar 3) . num)
+         (,(makevar 0) . sym))))
+
+(test "reform-To violating constraints"
+      (run* (T) (reform-To `((,(makevar 2) . num)
+                             (,(makevar 1) . num)
+                             (,(makevar 0) . sym))
+                           `((,(makevar 1) . cat)
+                             (,(makevar 2) . ,(makevar 3))
+                             (,(makevar 4) . ,(makevar 5)))
+                           T))
+      `(#f))
+
+; eval-numbero tests
+(define T1 `((,(makevar 4) . num) (,(makevar 1) . num) (,(makevar 0) . sym)))
+(define st5 `(,S1 (((((()))))) ,T1))
+
+(test "eval-numbero success repeated constraint"
+      (run* ($) (eval-numbero (makevar 4) st5 env-S1 $))
+      `((,st5)))
+
+(test "eval-numbero success extension"
+      (run* ($) (eval-numbero (makevar 5) st5 env-S1 $))
+      `(((,S1 (((((()))))) ((,(makevar 5) . num) . ,T1)))))
+
+(test "eval-numbero failure"
+      (run* ($) (eval-numbero (makevar 0) st5 env-S1 $))
+      `(()))
+
+; eval-gexpro tests
+(test "eval-gexpro =="
+      (run* ($) (eval-gexpro '(== d 3) st1 env-S1 $))
+      `((,st1)))
+
+(test "eval-gexpro fresh 1"
+      (run* ($) (eval-gexpro '(fresh (x) (== x c)) st1 env-S1 $))
+      `(((((,(makevar 5) . (,(makevar 1) . ,(makevar 0))) . ,S1)
+          ((((((()))))))
+          ()))))
+
+(test "eval-gexpro fresh 2"
+      (run* ($) (eval-gexpro '(fresh (x y) (== x y)) st1 env-S1 $))
+      `(((((,(makevar 5) . ,(makevar 6)) . ,S1)
+          (((((((())))))))
+          ()))))
+
+(test "eval-gexpro fresh 2"
+      (run* ($) (eval-gexpro '(fresh (x y) (== x y)) st1 env-S1 $))
+      `(((((,(makevar 5) . ,(makevar 6)) . ,S1) (((((((()))))))) ()))))
+
+(test "eval-gexpro conde"
+      (run* ($) (eval-gexpro '(conde [(== e 6) (== a 3)]
+                                     [(== e 6) (fresh (x) (== x 7))])
+                             st1
+                             env-S1
+                             $))
+      `(((((,(makevar 5) . 7) . ((,(makevar 4) . 6) . ,S1)) ((((((())))))) ()))))
+
+(test "eval-gexpro apply-rel"
+      (run* ($) (eval-gexpro '(oddo '(())) st1 renv-S1 $))
+      `(((((,(makevar 6) . ()) . ((,(makevar 5) . ()) . ,S1))
+          (((((((())))))))
+          ()))))
+
+(test "eval-gexpro letrec-rel"
+      (run* ($) (eval-gexpro '(letrec-rel ((eveno (x) (conde [(== '() x)]
+                                                             [(fresh (a d)
+                                                                (== (cons a d) x)
+                                                                (oddo d))]))
+                                           (oddo (x) (fresh (a d)
+                                                       (== (cons a d) x)
+                                                       (eveno d))))
+                                          (oddo '(())))
+                             st1 S1 $))
+      `(((((,(makevar 6) . ()) . ((,(makevar 5) . ()) . ,S1))
+          (((((((())))))))
+          ()))))
 
 (define S3 `((,(makevar 3) . ,(makevar 1))
              (,(makevar 2) . (,(makevar 6) . ,(makevar 0)))
@@ -450,55 +562,17 @@
              (,(makevar 5) . #f)
              (,(makevar 1) . 3)
              (,(makevar 2) . apple)))
+(define st3 `(,S3 (((((((()))))))) ()))
+(define st4 `(,S4 (((((((()))))))) ()))
 
 (test "reify-state/1st-varo"
-      (run* (v) (reify-state/1st-varo `(,S4 . (((((((())))))))) v))
+      (run* (v) (reify-state/1st-varo st4 v))
       `(((_. . ,(peano 0)) . apple)))
 
 ; reifyo tests
 (test "reifyo"
-      (run* (ans*) (reifyo `((,S4 . (((((((())))))))) (,S3 . (((((((()))))))))) ans*))
+      (run* (ans*) (reifyo `(,st4 ,st3) ans*))
       `((((_. . ,(peano 0)) . apple) apple)))
-
-; eval-gexpro tests
-(test "eval-gexpro =="
-      (run* ($) (eval-gexpro '(== d 3) st1 env-S1 $))
-      `((,st1)))
-
-(test "eval-gexpro fresh 1"
-      (run* ($) (eval-gexpro '(fresh (x) (== x c)) st1 env-S1 $))
-      `(((((,(makevar 5) . (,(makevar 1) . ,(makevar 0))) . ,S1) . ((((((()))))))))))
-
-(test "eval-gexpro fresh 2"
-      (run* ($) (eval-gexpro '(fresh (x y) (== x y)) st1 env-S1 $))
-      `(((((,(makevar 5) . ,(makevar 6)) . ,S1) . (((((((())))))))))))
-
-(test "eval-gexpro fresh 2"
-      (run* ($) (eval-gexpro '(fresh (x y) (== x y)) st1 env-S1 $))
-      `(((((,(makevar 5) . ,(makevar 6)) . ,S1) . (((((((())))))))))))
-
-(test "eval-gexpro conde"
-      (run* ($) (eval-gexpro '(conde [(== e 6) (== a 3)]
-                                     [(== e 6) (fresh (x) (== x 7))])
-                             st1
-                             env-S1
-                             $))
-      `(((((,(makevar 5) . 7) . ((,(makevar 4) . 6) . ,S1)) . ((((((()))))))))))
-
-(test "eval-gexpro apply-rel"
-      (run* ($) (eval-gexpro '(oddo '(())) st1 renv-S1 $))
-      `(((((,(makevar 6) . ()) . ((,(makevar 5) . ()) . ,S1)) . (((((((())))))))))))
-
-(test "eval-gexpro letrec-rel"
-      (run* ($) (eval-gexpro '(letrec-rel ((eveno (x) (conde [(== '() x)]
-                                                             [(fresh (a d)
-                                                                (== (cons a d) x)
-                                                                (oddo d))]))
-                                           (oddo (x) (fresh (a d)
-                                                       (== (cons a d) x)
-                                                       (eveno d))))
-                                          (oddo '(()))) st1 S1 $))
-      `(((((,(makevar 6) . ()) . ((,(makevar 5) . ()) . ,S1)) . (((((((())))))))))))
 
 ; occurso tests
 (test "occurso equality"
@@ -549,3 +623,88 @@
       `(((,(makevar 0) . ,(makevar 1))
          (,(makevar 4) . (,(makevar 2) . ,(makevar 3)))
          (,(makevar 2) . (,(makevar 1) . ,(makevar 1))))))
+
+; peano< tests
+(test "peano< base case #t"
+      (run* (<?) (peano< (peano 0) (peano 4) <?))
+      '(#t))
+
+(test "peano< base case #f"
+      (run* (<?) (peano< (peano 4) (peano 0) <?))
+      '(#f))
+
+(test "peano< recursive case #t"
+      (run* (<?) (peano< (peano 2) (peano 3) <?))
+      '(#t))
+
+(test "peano< recursive case #f"
+      (run* (<?) (peano< (peano 4) (peano 3) <?))
+      '(#f))
+
+; group-tag tests
+(test "group-tag num test"
+      (run* (tagged-T) (group-tag 'num `((,(makevar 3) . num)
+                                         (,(makevar 1) . sym)
+                                         (,(makevar 0) . sym)
+                                         (,(makevar 2) . num)) tagged-T))
+      `((,(peano 3)
+         ,(peano 2))))
+
+(test "group-tag sym test"
+      (run* (tagged-T) (group-tag 'sym `((,(makevar 3) . num)
+                                         (,(makevar 1) . sym)
+                                         (,(makevar 0) . sym)
+                                         (,(makevar 2) . num)) tagged-T))
+      `((,(peano 1)
+         ,(peano 0))))
+
+; insert-into tests
+(test "insert-into base case"
+      (run* (inserted-L)
+            (insert-into `() (peano 5) inserted-L))
+      `((,(peano 5))))
+
+(test "insert-into recursive case head insert"
+      (run* (inserted-L)
+            (insert-into `(,(peano 4) ,(peano 5) ,(peano 6)) (peano 2) inserted-L))
+      `((,(peano 2) ,(peano 4) ,(peano 5) ,(peano 6))))
+
+(test "insert-into recursive case middle insert"
+      (run* (inserted-L)
+            (insert-into `(,(peano 2) ,(peano 4) ,(peano 6)) (peano 5) inserted-L))
+      `((,(peano 2) ,(peano 4) ,(peano 5) ,(peano 6))))
+
+; insertion-sort-peano-list tests
+(test "insertion-sort-peano-list #1"
+      (run* (L)
+            (insertion-sort-peano-list `(,(peano 5) ,(peano 2) ,(peano 6) ,(peano 4)) L))
+      `((,(peano 2) ,(peano 4) ,(peano 5) ,(peano 6))))
+
+(test "insertion-sort-peano-list #2"
+      (run* (L)
+            (insertion-sort-peano-list `(,(peano 6) ,(peano 5) ,(peano 4) ,(peano 2)) L))
+      `((,(peano 2) ,(peano 4) ,(peano 5) ,(peano 6))))
+
+; purify-To tests
+(test "purify-To test"
+      (run* (T)
+            (purify-To `((,(makevar 3) . num)
+                         (,(makevar 1) . sym)
+                         (,(makevar 0) . sym)
+                         (,(makevar 2) . num))
+                       `((,(makevar 0) . (_. . ()))
+                         (,(makevar 2) . (_. . ((())))))
+                       T))
+      `(((,(makevar 0) . sym)
+         (,(makevar 2) . num))))
+
+; prettifyo tests
+(test "prettifyo test"
+      (run* (out)
+            (prettifyo `((_. . (())) (_. . ((()))))
+                       `((,(makevar 1) . (_. . (())))
+                         (,(makevar 2) . (_. . ((())))))
+                       `((,(makevar 1) . sym)
+                         (,(makevar 2) . num))
+                       out))
+      `((((_. . (())) (_. . ((())))) . ((num . ) (sym . )))))
