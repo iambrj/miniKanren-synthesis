@@ -646,7 +646,8 @@
       (run* (tagged-T) (group-tag 'num `((,(makevar 3) . num)
                                          (,(makevar 1) . sym)
                                          (,(makevar 0) . sym)
-                                         (,(makevar 2) . num)) tagged-T))
+                                         (,(makevar 2) . num))
+                                  tagged-T))
       `((,(peano 3)
          ,(peano 2))))
 
@@ -699,7 +700,7 @@
          (,(makevar 2) . num))))
 
 ; prettifyo tests
-(test "prettifyo test"
+(test "prettifyo test 1"
       (run* (out)
             (prettifyo `((_. . (())) (_. . ((()))))
                        `((,(makevar 1) . (_. . (())))
@@ -707,4 +708,14 @@
                        `((,(makevar 1) . sym)
                          (,(makevar 2) . num))
                        out))
-      `((((_. . (())) (_. . ((())))) . ((num . ) (sym . )))))
+      `((((_. . (())) (_. . ((())))) (num (_. . ((())))) (sym (_. . (()))))))
+
+(test "prettifyo test 2"
+      (run* (out)
+            (prettifyo `((_. . (())) (_. . ((()))))
+                       `((,(makevar 1) . (_. . (())))
+                         (,(makevar 2) . (_. . ((())))))
+                       `((,(makevar 2) . num)
+                         (,(makevar 1) . num))
+                       out))
+      `((((_. . (())) (_. . ((())))) (num (_. . (())) (_. . ((())))))))

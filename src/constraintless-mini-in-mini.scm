@@ -3,15 +3,15 @@ Syntax:
 <mk-program> ::= (run* (<id>+) <goal expr>+)
                | (run <peano> (<id>+) <goal expr>+)
 
-<goal expr> ::= (conde (<goal expr>+)+)
+<goal expr> ::= (== <term expr> <term expr>)
               | (fresh (<id>*) <goal expr>+)
-              | (== <term expr> <term expr>)
+              | (conde (<goal expr>+)+)
               | (letrec-rel ((<id> (<id>*) <goal expr>+))
                   <goal expr>+)
               ; Try getting rid of "apply-rel". Split env into two lists
               ; (variables and values), use (absento conde variables) in other
               ; cases
-              | (apply-rel <id> <term expr>*)
+              | (<id> <term expr>*)
 
 <term expr> ::= (quote <datum>)
               | <lexical variable>
@@ -39,7 +39,7 @@ Syntax:
 
 <logic variable> ::= (var . <peano>)
 
-<number> ::= [0-9]+
+<number> ::= 
 
 <boolean> ::= #f
             | #t
@@ -345,24 +345,24 @@ Syntax:
     (== `(,S ,C ,T) st)
     (walko v-unwalked S v)
     (conde
-    [(== '() $)
-     (conde
-       [(== '() v)]
-       [(booleano v)]
-       [(symbolo v)]
-       [(fresh (a d)
-          (== (cons a d) v)
-          (=/= 'var a))])]
-    [(numbero v)
-     (== `(,st) $)]
-    [(fresh (p ext)
-       (== `(,S ,C ,T) st)
-       (== (cons 'var p) v)
-       (ext-To v T 'num ext)
-       (conde
-         [(== #f ext) (== '() $)]
-         [(== '() ext) (== `(,st) $)]
-         [(== `(,v . num) ext) (== `((,S ,C (,ext . ,T))) $)]))])))
+     [(== '() $)
+      (conde
+        [(== '() v)]
+        [(booleano v)]
+        [(symbolo v)]
+        [(fresh (a d)
+           (== (cons a d) v)
+           (=/= 'var a))])]
+     [(numbero v)
+      (== `(,st) $)]
+     [(fresh (p ext)
+        (== `(,S ,C ,T) st)
+        (== (cons 'var p) v)
+        (ext-To v T 'num ext)
+        (conde
+          [(== #f ext) (== '() $)]
+          [(== '() ext) (== `(,st) $)]
+          [(== `(,v . num) ext) (== `((,S ,C (,ext . ,T))) $)]))])))
 
 (define (ext-To x T tag ext)
   (conde
@@ -621,17 +621,17 @@ Syntax:
 (define (eval-thunko th $)
   (fresh ()
     (conde
-    [(fresh (gexpr st env)
-       (== `(delayed eval ,gexpr ,st ,env) th)
-       (eval-gexpro gexpr st env $))]
-    [(fresh ($1 $2 $1e)
-       (== `(delayed mplus ,$1 ,$2) th)
-       (eval-thunko $1 $1e)
-       (mpluso $2 $1e $))]
-    [(fresh ($1 gexpr env $1e)
-       (== `(delayed bind ,$1 ,gexpr ,env) th)
-       (eval-thunko $1 $1e)
-       (bindo $1e gexpr env $))])))
+     [(fresh (gexpr st env)
+        (== `(delayed eval ,gexpr ,st ,env) th)
+        (eval-gexpro gexpr st env $))]
+     [(fresh ($1 $2 $1e)
+        (== `(delayed mplus ,$1 ,$2) th)
+        (eval-thunko $1 $1e)
+        (mpluso $2 $1e $))]
+     [(fresh ($1 gexpr env $1e)
+        (== `(delayed bind ,$1 ,gexpr ,env) th)
+        (eval-thunko $1 $1e)
+        (bindo $1e gexpr env $))])))
 
 (define (reifyo st* out)
   (fresh()
@@ -644,7 +644,7 @@ Syntax:
          (reifyo d vd))])))
 
 (define (reify-state/1st-varo st out)
-  (fresh (S C T v reified-v reified-S impure-T T)
+  (fresh (S C T v reified-v reified-S impure-T)
     (== `(,S ,C ,impure-T) st)
     (walk*o `(var . ()) S v)
     (build-reify-S v '() reified-S)
@@ -662,19 +662,21 @@ Syntax:
     (prettifyo reified-v reified-S T out)))
 |#
 
-(define (prettifyo v reified-S T out)
-  (fresh (symT numT unreified-symT unreified-numT unsorted-symT unsorted-numT)
+(define (prettifyo v reified-S reified-T out)
+  (fresh (symT numT peano-symT peano-numT unreified-symT unreified-numT unsorted-symT unsorted-numT)
     (group-tag 'num reified-T unsorted-numT)
     (group-tag 'sym reified-T unsorted-symT)
     (insertion-sort-peano-list unsorted-symT unreified-symT)
     (insertion-sort-peano-list unsorted-numT unreified-numT)
-    (walk*o unreified-symT reified-S symT)
-    (walk*o unreified-numT reified-S numT)
+    (walk*o unreified-symT reified-S peano-symT)
+    (walk*o unreified-numT reified-S peano-numT)
+    (insert-_. peano-numT numT)
+    (insert-_. peano-symT symT)
     (conde
       [(== '() symT) (== '() numT) v]
-      [(=/= '() symT) (== '() numT) `(,v . (sym . ,symT))]
-      [(== '() symT) (=/= '() numT) `(,v . (num . ,numT))]
-      [(=/= '() symT) (=/= '() numT)  `(,v . ((num . ,numT) (sym . ,symT)))])))
+      [(=/= '() symT) (== '() numT) (== `(,v (sym . ,symT)) out)]
+      [(== '() symT) (=/= '() numT) (== `(,v (num . ,numT)) out)]
+      [(=/= '() symT) (=/= '() numT) (== `(,v (num . ,numT) (sym . ,symT)) out)])))
 
 (define (purify-To T r T^)
   (conde
@@ -695,7 +697,7 @@ Syntax:
   (conde
     [(== '() T) (== '() tagged-T)]
     [(fresh (u-tag u Td tagged-Td)
-       (== `(((var . u) . ,u-tag) . ,Td) T)
+       (== `(((var . ,u) . ,u-tag) . ,Td) T)
        (conde
          [(== u-tag tag) (== `(,u . ,tagged-Td) tagged-T)]
          [(=/= u-tag tag) (== tagged-Td tagged-T)])
@@ -724,6 +726,14 @@ Syntax:
             (== (cons a inserted-d) inserted-L))]
          [(== #f <?)
           (== (cons u sorted-L) inserted-L)]))]))
+
+(define (insert-_. peano-T T)
+  (conde
+    [(== '() peano-T) (== '() T)]
+    [(fresh (a d d-T)
+       (== (cons a d) peano-T)
+       (== (cons (cons '_. a) d-T) T)
+       (insert-_. d d-T))]))
 
 (define (build-reify-S v-unwalked s s1)
   (fresh (v)
