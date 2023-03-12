@@ -294,6 +294,10 @@ Syntax:
        (== `(numbero ,te) expr)
        (eval-texpro te env v)
        (eval-numbero v st env $))]
+    [(fresh (te v)
+       (== `(symbolo ,te) expr)
+       (eval-texpro te env v)
+       (eval-symbolo v st env $))]
     [(fresh (x* ge+)
        (== `(fresh ,x* . ,ge+) expr)
        (=/= '() ge+)
@@ -363,6 +367,30 @@ Syntax:
           [(== #f ext) (== '() $)]
           [(== '() ext) (== `(,st) $)]
           [(== `(,v . num) ext) (== `((,S ,C (,ext . ,T))) $)]))])))
+
+(define (eval-symbolo v-unwalked st env $)
+  (fresh (v S C T)
+    (== `(,S ,C ,T) st)
+    (walko v-unwalked S v)
+    (conde
+     [(== '() $)
+      (conde
+        [(== '() v)]
+        [(booleano v)]
+        [(numbero v)]
+        [(fresh (a d)
+           (== (cons a d) v)
+           (=/= 'var a))])]
+     [(symbolo v)
+      (== `(,st) $)]
+     [(fresh (p ext)
+        (== `(,S ,C ,T) st)
+        (== (cons 'var p) v)
+        (ext-To v T 'sym ext)
+        (conde
+          [(== #f ext) (== '() $)]
+          [(== '() ext) (== `(,st) $)]
+          [(== `(,v . sym) ext) (== `((,S ,C (,ext . ,T))) $)]))])))
 
 (define (ext-To x T tag ext)
   (conde
@@ -643,6 +671,7 @@ Syntax:
          (reify-state/1st-varo a va)
          (reifyo d vd))])))
 
+#|
 (define (reify-state/1st-varo st out)
   (fresh (S C T v reified-v reified-S impure-T)
     (== `(,S ,C ,impure-T) st)
@@ -650,17 +679,16 @@ Syntax:
     (build-reify-S v '() reified-S)
     (walk*o v reified-S out)
     (purify-To impure-T reified-S T)))
+|#
 
-#|
 (define (reify-state/1st-varo st out)
-  (fresh (S C T v reified-v reified-S impure-T T)
+  (fresh (S C T v reified-v reified-S impure-T)
     (== `(,S ,C ,impure-T) st)
     (walk*o `(var . ()) S v)
     (build-reify-S v '() reified-S)
     (walk*o v reified-S reified-v)
     (purify-To impure-T reified-S T)
     (prettifyo reified-v reified-S T out)))
-|#
 
 (define (prettifyo v reified-S reified-T out)
   (fresh (symT numT peano-symT peano-numT unreified-symT unreified-numT unsorted-symT unsorted-numT)
@@ -673,7 +701,7 @@ Syntax:
     (insert-_. peano-numT numT)
     (insert-_. peano-symT symT)
     (conde
-      [(== '() symT) (== '() numT) v]
+      [(== '() symT) (== '() numT) (== `(,v) out)]
       [(=/= '() symT) (== '() numT) (== `(,v (sym . ,symT)) out)]
       [(== '() symT) (=/= '() numT) (== `(,v (num . ,numT)) out)]
       [(=/= '() symT) (=/= '() numT) (== `(,v (num . ,numT) (sym . ,symT)) out)])))
